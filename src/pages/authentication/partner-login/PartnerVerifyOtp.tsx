@@ -1,13 +1,20 @@
 import React, { useState, useRef, ChangeEvent, KeyboardEvent, useEffect } from 'react';
 import useAuth from '../../../hooks/useAuth';
 import { useSnackbar } from 'notistack';
+import { SESSION_PATHS } from '../../../routes/paths';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../../../utils/axios';
 
 interface PartnerVerifyOtpProps {
   email: string;
-  onVerified: () => void;
 }
 
 interface OtpResponse {
+  data?: {
+    tokens?: {
+      access?: string;
+    };
+  };
   status?: number;
   otp?: boolean;
   message?: string;
@@ -16,11 +23,11 @@ interface OtpResponse {
 const OTP_LENGTH = 6;
 const RESEND_TIMER = 30; // 30 seconds
 
-const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email, onVerified }) => {
+const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email }) => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [timer, setTimer] = useState(RESEND_TIMER);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -49,7 +56,6 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email, onVerified }
     const updatedOtp = [...otp];
     updatedOtp[index] = value;
     setOtp(updatedOtp);
-    setError(''); // Clear error on input
 
     if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
@@ -69,20 +75,26 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email, onVerified }
 
     const finalOtp = otp.join('');
     setIsLoading(true);
-    setError('');
 
     try {
       const response = (await verifyOtp({ email, otp: finalOtp })) as OtpResponse;
-      console.log('response: ', response);
       if (response.status === 200) {
         enqueueSnackbar(response?.message || 'OTP sent successfully', { variant: 'success' });
-        onVerified();
+        navigate(SESSION_PATHS.RESTAURANT_INFORMATION, {
+          state: {
+            data: response.data,
+          },
+        });
+        const token = response?.data?.tokens?.access;
+        if (token) {
+          localStorage.setItem('accessToken', token);
+          // axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
       } else {
         enqueueSnackbar(response?.message || 'Failed to send OTP. Please try again.', { variant: 'error' });
       }
     } catch (err: any) {
       enqueueSnackbar(err?.response?.data?.message || err?.message || 'Invalid OTP. Please try again.', { variant: 'error' });
-      console.error('Registration error:', err);
       setOtp(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } finally {
@@ -94,7 +106,6 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email, onVerified }
     if (!canResend || isLoading) return;
 
     setIsLoading(true);
-    setError('');
 
     try {
       const response = (await resendOtp(email)) as OtpResponse;
@@ -123,12 +134,6 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email, onVerified }
     <div className='partner-otp-card'>
       <h4 className='partner-otp-title'>Enter OTP</h4>
       <p className='partner-otp-subtitle'>Enter OTP sent for Email: {email}</p>
-
-      {error && (
-        <div className='alert alert-danger small mb-3' role='alert'>
-          {error}
-        </div>
-      )}
 
       <div className='partner-otp-inputs'>
         {otp.map((digit, index) => (

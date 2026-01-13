@@ -13,6 +13,10 @@ interface User {
   [key: string]: string | number | undefined;
 }
 
+interface RestaurantPayload {
+  [key: string]: any;
+}
+
 interface AuthState {
   user: User | null;
   isInitialized: boolean;
@@ -30,6 +34,8 @@ interface AuthContextType extends AuthState {
   resendOtp: (email: string) => Promise<AxiosResponse>;
   resetPassword: (data: object) => Promise<AxiosResponse>;
   initialize: () => Promise<void>;
+  getRestaurant: () => Promise<any>;
+  createOrUpdateRestaurant: (payload: any) => Promise<any>;
 }
 
 /* =========================
@@ -93,6 +99,8 @@ const AuthContext = createContext<AuthContextType>({
   resendOtp: async () => Promise.reject(),
   resetPassword: async () => Promise.reject(),
   initialize: async () => {},
+  getRestaurant: async () => Promise.reject(),
+  createOrUpdateRestaurant: async () => Promise.reject(),
 });
 
 /* =========================
@@ -232,9 +240,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  /* =========================
-     Provider Value
-  ========================= */
+  const getRestaurant = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await axiosInstance.get('/get-restaurant', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return res;
+    } catch (err) {
+      console.warn('No restaurant data found');
+      throw err;
+    }
+  };
+
+  const createOrUpdateRestaurant = async (payload: RestaurantPayload) => {
+    try {
+      const res = await axiosInstance.post('/restaurant-creation', payload);
+      return res;
+    } catch (err) {
+      console.error('Restaurant create/update failed', err);
+      throw err;
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -250,6 +279,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         resendOtp,
         resetPassword,
         initialize,
+        getRestaurant,
+        createOrUpdateRestaurant,
       }}
     >
       {children}

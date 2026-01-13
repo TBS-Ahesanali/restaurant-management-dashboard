@@ -1,7 +1,6 @@
 import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-// import axiosInstance from '../utils/axios';
 
 export interface RestaurantDocumentsRef {
   submitForm: () => void;

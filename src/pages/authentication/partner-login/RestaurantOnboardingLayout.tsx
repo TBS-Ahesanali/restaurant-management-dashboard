@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import RestaurantInformationStep from './RestaurantInformation';
 import RestaurantDocuments from './RestaurantDocuments';
+import AuthContext from '../../../contexts/AuthContext';
 // import axiosInstance from '../utils/axios';
 
 const steps = [
@@ -12,50 +13,58 @@ const steps = [
 ];
 
 const RestaurantOnboardingLayout: React.FC = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
+  const responseData = location.state?.data;
   const infoStepRef = useRef<any>(null);
   const documentsStepRef = useRef<any>(null);
-
+  const { getRestaurant, createOrUpdateRestaurant } = useContext(AuthContext);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [fetchingData, setFetchingData] = useState(true);
   const [error, setError] = useState<string>('');
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [restaurantData, setRestaurantData] = useState<any>(null);
+  console.log('restaurantData: ', restaurantData);
+
+  // Set initial step from responseData if available
+  // useEffect(() => {
+  //   if (responseData?.next_step !== undefined && responseData?.next_step !== null) {
+  //     // next_step is 1-indexed (1, 2, 3, 4), convert to 0-indexed (0, 1, 2, 3)
+  //     const stepIndex = Math.max(0, Math.min(responseData.next_step - 1, steps.length - 1));
+  //     setCurrentStep(stepIndex);
+  //     console.log(`Setting initial step to ${stepIndex} from responseData.next_step: ${responseData.next_step}`);
+
+  //     // Set restaurant data from responseData
+  //     setRestaurantData(responseData);
+
+  //     // Set restaurant ID if available
+  //     if (responseData.restaurant_id || responseData.id) {
+  //       setRestaurantId(responseData.restaurant_id || responseData.id);
+  //     }
+  //   }
+  // }, [responseData]);
 
   // Fetch existing restaurant data on mount
-  // useEffect(() => {
-  //   fetchRestaurantData();
-  // }, []);
+  useEffect(() => {
+    fetchRestaurantData();
+  }, []);
 
-  // const fetchRestaurantData = async () => {
-  //   try {
-  //     setFetchingData(true);
-  //     const response = await axiosInstance.get('/admin_control/restaurant-creation');
+  const fetchRestaurantData = async () => {
+    try {
+      setFetchingData(true);
+      const response = await getRestaurant();
 
-  //     if (response.data) {
-  //       const data = response.data;
-
-  //       // Set restaurant ID if exists
-  //       if (data.restaurant_id || data.id) {
-  //         setRestaurantId(data.restaurant_id || data.id);
-  //       }
-
-  //       // Determine current step based on completed data
-  //       if (data.is_step2 || (data.pan && data.gstin)) {
-  //         setCurrentStep(2);
-  //       } else if (data.is_step1 || data.owner_full_name) {
-  //         setCurrentStep(1);
-  //       } else {
-  //         setCurrentStep(0);
-  //       }
-  //     }
-  //   } catch (error: any) {
-  //     console.log('No existing data found:', error);
-  //     setCurrentStep(0);
-  //   } finally {
-  //     setFetchingData(false);
-  //   }
-  // };
+      if (response) {
+        const data = response.data;
+        setRestaurantData(data);
+      }
+    } catch (error: any) {
+      console.log('No existing data found:', error);
+      setCurrentStep(0);
+    } finally {
+      setFetchingData(false);
+    }
+  };
 
   // Single API endpoint
   // const createOrUpdateRestaurant = async (payload: any) => {
@@ -192,22 +201,28 @@ const RestaurantOnboardingLayout: React.FC = () => {
   };
 
   const renderStepContent = () => {
-    // if (fetchingData) {
-    //   return (
-    //     <div className='text-center py-5'>
-    //       <div className='spinner-border text-success' role='status'>
-    //         <span className='visually-hidden'>Loading...</span>
-    //       </div>
-    //       <p className='mt-3 text-muted'>Loading restaurant data...</p>
-    //     </div>
-    //   );
-    // }
+    if (fetchingData) {
+      return (
+        <div className='text-center py-5'>
+          <div className='spinner-border text-success' role='status'>
+            <span className='visually-hidden'>Loading...</span>
+          </div>
+          <p className='mt-3 text-muted'>Loading restaurant data...</p>
+        </div>
+      );
+    }
 
     switch (currentStep) {
       case 0:
-        return <RestaurantInformationStep ref={infoStepRef} />;
+        return <RestaurantInformationStep ref={infoStepRef} initialData={restaurantData} />;
       case 1:
-        return <RestaurantDocuments ref={documentsStepRef} />;
+        return (
+          <RestaurantDocuments
+            data={responseData}
+            // ref={documentsStepRef}
+            updateData={responseData}
+          />
+        );
       case 2:
         return (
           <div className='p-4'>
@@ -264,26 +279,26 @@ const RestaurantOnboardingLayout: React.FC = () => {
               <div className='onboarding-card'>
                 {renderStepContent()}
 
-                {/* {!fetchingData && ( */}
-                <div className='d-flex justify-content-between mt-4'>
-                  <button className='btn btn-outline-secondary' disabled={currentStep === 0 || loading} onClick={handleBack}>
-                    Back
-                  </button>
+                {!fetchingData && (
+                  <div className='d-flex justify-content-between mt-4'>
+                    <button className='btn btn-outline-secondary' disabled={currentStep === 0 || loading} onClick={handleBack}>
+                      Back
+                    </button>
 
-                  <button className='btn btn-success' onClick={handleContinue} disabled={loading}>
-                    {loading ? (
-                      <>
-                        <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                        Processing...
-                      </>
-                    ) : currentStep === steps.length - 1 ? (
-                      'Finish'
-                    ) : (
-                      'Continue'
-                    )}
-                  </button>
-                </div>
-                {/* )} */}
+                    <button className='btn btn-success' onClick={handleContinue} disabled={loading}>
+                      {loading ? (
+                        <>
+                          <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
+                          Processing...
+                        </>
+                      ) : currentStep === steps.length - 1 ? (
+                        'Finish'
+                      ) : (
+                        'Continue'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </main>
           </div>

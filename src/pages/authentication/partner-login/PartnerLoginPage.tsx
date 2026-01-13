@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PartnerLoginStart from './PartnerLoginStart';
 import PartnerVerifyOtp from './PartnerVerifyOtp';
-import { SESSION_PATHS } from '../../../routes/paths';
 import useAuth from '../../../hooks/useAuth';
 import { useSnackbar } from 'notistack';
 
@@ -19,7 +17,6 @@ const PartnerLoginPage: React.FC = () => {
   const [step, setStep] = useState<'start' | 'otp'>('start');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +38,6 @@ const PartnerLoginPage: React.FC = () => {
     }
   };
 
-  const handleOtpVerified = () => {
-    navigate(SESSION_PATHS.RESTAURANT_INFORMATION);
-  };
-
   return (
     <div className='auth-container d-flex align-items-center justify-content-center'>
       <div className='partner-login'>
@@ -62,7 +55,6 @@ const PartnerLoginPage: React.FC = () => {
             {step === 'otp' && (
               <PartnerVerifyOtp
                 email={email}
-                onVerified={handleOtpVerified}
                 // onBack={() => setStep('start')}
               />
             )}

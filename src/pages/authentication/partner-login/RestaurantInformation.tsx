@@ -1,15 +1,20 @@
 import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-// import axiosInstance from '../utils/axios';
 
 export interface RestaurantInfoRef {
   submitForm: () => void;
+  isValid: boolean;
+  values: any;
+}
+
+interface RestaurantInfoProps {
+  initialData?: any;
 }
 
 const validationSchema = Yup.object({
   ownerName: Yup.string().trim().required("Owner's full name is required"),
-  restaurantName: Yup.string().trim().required('Restaurant name is required'),
+  restaurant_name: Yup.string().trim().required('Restaurant name is required'),
   address: Yup.string().trim().required('Address is required'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
   mobile: Yup.string()
@@ -23,11 +28,12 @@ const validationSchema = Yup.object({
   }),
 });
 
-const RestaurantInformationStep = forwardRef<any, any>((props, ref) => {
+const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initialData }, ref) => {
+  console.log('initialData: ', initialData);
   const formik = useFormik({
     initialValues: {
       ownerName: '',
-      restaurantName: '',
+      restaurant_name: '',
       address: '',
       email: '',
       mobile: '',
@@ -40,32 +46,22 @@ const RestaurantInformationStep = forwardRef<any, any>((props, ref) => {
     onSubmit: () => {},
   });
 
-  // Fetch data on mount
-  // useEffect(() => {
-  //   fetchRestaurantData();
-  // }, []);
+  // Update form values when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      const isSameNumber = initialData.owner_phone_number === initialData.whatsapp_number;
 
-  // const fetchRestaurantData = async () => {
-  //   try {
-  //     const response = await axiosInstance.get('/admin_control/restaurant-creation');
-
-  //     if (response.data) {
-  //       const data = response.data;
-
-  //       formik.setValues({
-  //         ownerName: data.owner_full_name || '',
-  //         restaurantName: data.restaurant_name || '',
-  //         address: data.address || '',
-  //         email: data.owner_email || '',
-  //         mobile: data.owner_phone_number?.toString() || '',
-  //         whatsappSame: data.owner_phone_number === data.whatsapp_number,
-  //         whatsappNumber: data.whatsapp_number?.toString() || '',
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.log('Error fetching data:', error);
-  //   }
-  // };
+      formik.setValues({
+        ownerName: initialData.owner_full_name || '',
+        restaurant_name: initialData.restaurant_name || '',
+        address: initialData.address || '',
+        email: initialData.owner_email || '',
+        mobile: initialData.owner_phone_number?.toString() || '',
+        whatsappSame: isSameNumber,
+        whatsappNumber: !isSameNumber ? initialData.whatsapp_number?.toString() || '' : '',
+      });
+    }
+  }, [initialData]);
 
   useImperativeHandle(ref, () => ({
     submit: formik.submitForm,
@@ -86,8 +82,8 @@ const RestaurantInformationStep = forwardRef<any, any>((props, ref) => {
         {showError('ownerName') && <div className='invalid-feedback'>{formik.errors.ownerName}</div>}
 
         <label className='form-label mt-3'>Restaurant Name*</label>
-        <input type='text' className={`form-control mb-1 ${showError('restaurantName') ? 'is-invalid' : ''}`} {...formik.getFieldProps('restaurantName')} />
-        {showError('restaurantName') && <div className='invalid-feedback'>{formik.errors.restaurantName}</div>}
+        <input type='text' className={`form-control mb-1 ${showError('restaurant_name') ? 'is-invalid' : ''}`} {...formik.getFieldProps('restaurant_name')} />
+        {showError('restaurant_name') && <div className='invalid-feedback'>{formik.errors.restaurant_name}</div>}
 
         <label className='form-label mt-3'>Address*</label>
         <input type='text' className={`form-control mb-1 ${showError('address') ? 'is-invalid' : ''}`} {...formik.getFieldProps('address')} />
@@ -152,5 +148,7 @@ const RestaurantInformationStep = forwardRef<any, any>((props, ref) => {
     </>
   );
 });
+
+RestaurantInformationStep.displayName = 'RestaurantInformationStep';
 
 export default RestaurantInformationStep;
