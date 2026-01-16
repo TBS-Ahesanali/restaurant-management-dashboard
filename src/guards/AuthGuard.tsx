@@ -15,7 +15,6 @@ const AuthGuard = ({ allowedRoles = [], children }: AuthGuardProps) => {
   const { pathname } = useLocation();
 
   const userRole = user?.user_role;
-  console.log(isInitialized, 'isInitialized');
 
   if (!isInitialized) {
     return <Loader />;

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, UtensilsCrossed, Utensils, Tags, CalendarRange, ShoppingCart, Users, BarChart3, Bell, Settings, X } from 'lucide-react';
 import { PATHS } from '../routes/paths';
+import LOGO from '../assets/icons/Logo.svg';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,9 +24,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose}></div>
       <aside className={`sidebar ${!isOpen ? 'sidebar-closed' : ''}`}>
         <div className='sidebar-header p-3 border-bottom d-flex justify-content-between align-items-center'>
-          <div className='d-flex align-items-center justify-content-between gap-2'>
-            <Utensils size={25} />
-            <h4 className='mb-0'>Restaurant Admin</h4>
+          <div className='d-flex align-items-center justify-content-center m-auto'>
+            <img src={LOGO} alt='Food Logo' className='company-logo' />
           </div>
           <button className='btn btn-icon d-lg-none' onClick={onClose} aria-label='Close Menu'>
             <X size={24} />
@@ -35,6 +35,10 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <NavLink to={PATHS.DASHBOARD} className='nav-link' onClick={onClose}>
             <LayoutDashboard size={20} />
             <span>Dashboard</span>
+          </NavLink>
+          <NavLink to={PATHS.RESTAURANTS} className='nav-link' onClick={onClose}>
+            <Utensils size={20} />
+            <span>Restaurants</span>
           </NavLink>
           <NavLink to={PATHS.MENU} className='nav-link' onClick={onClose}>
             <UtensilsCrossed size={20} />

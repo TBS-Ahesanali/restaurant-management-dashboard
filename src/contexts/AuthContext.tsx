@@ -1,6 +1,6 @@
 import { createContext, useReducer, useEffect, ReactNode } from 'react';
-import axiosInstance from '../utils/axios';
-import { AxiosResponse, AxiosError } from 'axios';
+import axiosInstance, { axiosFileInstance } from '../utils/axios';
+import { AxiosResponse } from 'axios';
 
 /* =========================
    Types & Interfaces
@@ -13,14 +13,34 @@ interface User {
   [key: string]: string | number | undefined;
 }
 
-interface RestaurantPayload {
+interface Restaurant {
+  id: number;
+  restaurant_name: string;
+  address: string;
+  owner_full_name?: string;
+  owner_email?: string;
+  owner_phone_number?: number;
+  whatsapp_number?: number;
+  pan_number?: string;
+  gstin?: string;
+  fssai?: string;
+  bank_name?: string;
+  account_number?: string;
+  ifsc_code?: string;
+  is_step1: boolean;
+  is_step2: boolean;
+  is_step3: boolean;
+  is_step4: boolean;
+  status: string;
   [key: string]: any;
 }
 
 interface AuthState {
   user: User | null;
+  restaurant: Restaurant | null;
   isInitialized: boolean;
   isAuthenticated: boolean;
+  isRestaurantLoaded: boolean;
 }
 
 interface AuthContextType extends AuthState {
@@ -34,8 +54,8 @@ interface AuthContextType extends AuthState {
   resendOtp: (email: string) => Promise<AxiosResponse>;
   resetPassword: (data: object) => Promise<AxiosResponse>;
   initialize: () => Promise<void>;
-  getRestaurant: () => Promise<any>;
-  createOrUpdateRestaurant: (payload: any) => Promise<any>;
+  fetchRestaurantData: (token: any) => Promise<any>;
+  createOrUpdateRestaurant: (token: string, payload: any) => Promise<any>;
 }
 
 /* =========================
@@ -44,15 +64,22 @@ interface AuthContextType extends AuthState {
 
 const initialAuthState: AuthState = {
   user: null,
+  restaurant: null,
   isInitialized: false,
   isAuthenticated: false,
+  isRestaurantLoaded: false,
 };
 
 /* =========================
    Reducer
 ========================= */
 
-type AuthAction = { type: 'INITIALIZE'; payload: { user: User | null } } | { type: 'LOGIN'; payload: { user: User } } | { type: 'LOGOUT' };
+type AuthAction =
+  | { type: 'INITIALIZE'; payload: { user: User | null } }
+  | { type: 'LOGIN'; payload: { user: User } }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_RESTAURANT'; payload: { restaurant: Restaurant | null } }
+  | { type: 'RESTAURANT_LOADED' };
 
 const reducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
@@ -76,16 +103,26 @@ const reducer = (state: AuthState, action: AuthAction): AuthState => {
         ...state,
         isAuthenticated: false,
         user: null,
+        restaurant: null,
+        isRestaurantLoaded: false,
+      };
+    case 'SET_RESTAURANT':
+      return {
+        ...state,
+        restaurant: action.payload.restaurant,
+        isRestaurantLoaded: true,
+      };
+
+    case 'RESTAURANT_LOADED':
+      return {
+        ...state,
+        isRestaurantLoaded: true,
       };
 
     default:
       return state;
   }
 };
-
-/* =========================
-   Context
-========================= */
 
 const AuthContext = createContext<AuthContextType>({
   ...initialAuthState,
@@ -99,13 +136,9 @@ const AuthContext = createContext<AuthContextType>({
   resendOtp: async () => Promise.reject(),
   resetPassword: async () => Promise.reject(),
   initialize: async () => {},
-  getRestaurant: async () => Promise.reject(),
+  fetchRestaurantData: async () => Promise.reject(),
   createOrUpdateRestaurant: async () => Promise.reject(),
 });
-
-/* =========================
-   Provider
-========================= */
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -117,10 +150,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     initialize();
   }, []);
-
-  /* =========================
-     Initialize
-  ========================= */
 
   const initialize = async () => {
     const token = localStorage.getItem('accessToken');
@@ -141,13 +170,53 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Initialization failed:', error);
       logout();
-      throw error; // ✅ propagate if needed
     }
   };
 
-  /* =========================
-     Auth APIs
-  ========================= */
+  const fetchRestaurantData = async (token: any) => {
+    try {
+      if (!token) {
+        dispatch({ type: 'RESTAURANT_LOADED' });
+        return;
+      }
+
+      const response = await axiosInstance.get('/get-restaurant', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data) {
+        dispatch({
+          type: 'SET_RESTAURANT',
+          payload: { restaurant: response.data },
+        });
+      } else {
+        dispatch({ type: 'RESTAURANT_LOADED' });
+      }
+    } catch (error: any) {
+      console.log('No restaurant data found:', error?.response?.message || error.message);
+      dispatch({ type: 'RESTAURANT_LOADED' });
+    }
+  };
+
+  const createOrUpdateRestaurant = async (token: string, payload: any) => {
+    try {
+      const response = await axiosFileInstance.post('/restaurant-creation', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data) {
+        await fetchRestaurantData(token);
+      }
+      return response;
+    } catch (error) {
+      console.error('Restaurant create/update failed:', error);
+      throw error;
+    }
+  };
 
   const login = async (email: string, password: string): Promise<AxiosResponse> => {
     try {
@@ -158,7 +227,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem('accessToken', token);
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
-
       dispatch({ type: 'LOGIN', payload: { user: response.data.user } });
       return response;
     } catch (error) {
@@ -196,17 +264,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  /* =========================
-     Restaurant OTP Flow
-  ========================= */
-
   const registerRestaurant = async (email: string): Promise<AxiosResponse> => {
     try {
       const response = await axiosInstance.post('/restaurant-user/', { email });
       return response;
     } catch (error) {
       console.error('Restaurant registration failed:', error);
-      throw error; // ✅ REQUIRED
+      throw error;
     }
   };
 
@@ -240,31 +304,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const getRestaurant = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const res = await axiosInstance.get('/get-restaurant', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return res;
-    } catch (err) {
-      console.warn('No restaurant data found');
-      throw err;
-    }
-  };
-
-  const createOrUpdateRestaurant = async (payload: RestaurantPayload) => {
-    try {
-      const res = await axiosInstance.post('/restaurant-creation', payload);
-      return res;
-    } catch (err) {
-      console.error('Restaurant create/update failed', err);
-      throw err;
-    }
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -279,7 +318,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         resendOtp,
         resetPassword,
         initialize,
-        getRestaurant,
+        fetchRestaurantData,
         createOrUpdateRestaurant,
       }}
     >

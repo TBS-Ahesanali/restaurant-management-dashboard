@@ -1,6 +1,7 @@
 // paths.js
 export const PATHS = {
   DASHBOARD: '/dashboard',
+  RESTAURANTS: '/restaurants',
   MENU: '/menu',
   BOOKINGS: '/bookings',
   DISCOUNTS: '/discounts',
@@ -24,5 +25,6 @@ export const SESSION_PATHS = {
   VERIFY_OTP: '/session/verify-otp',
   RESTAURANT_INFORMATION: '/session/restaurant-info',
   RESTAURANT_DOCUMENTS: '/session/restaurant-docs',
+  RESTAURANT_PENDING: '/restaurant-pending',
   NOT_FOUND: '*',
 };

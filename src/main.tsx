@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import '../src/assets/styles/global.css';
@@ -9,7 +8,7 @@ import { store } from './redux/store.ts';
 // import 'perfect-scrollbar/css/perfect-scrollbar.css';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  <>
     <SnackbarProvider autoHideDuration={1500} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} preventDuplicate>
       <AuthProvider>
         <Provider store={store}>
@@ -17,5 +16,5 @@ createRoot(document.getElementById('root')!).render(
         </Provider>
       </AuthProvider>
     </SnackbarProvider>
-  </StrictMode>
+  </>
 );

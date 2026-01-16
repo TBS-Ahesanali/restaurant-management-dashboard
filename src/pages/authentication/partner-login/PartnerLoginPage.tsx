@@ -52,12 +52,7 @@ const PartnerLoginPage: React.FC = () => {
           {/* Right Section */}
           <div className='partner-login__right'>
             {step === 'start' && <PartnerLoginStart email={email} setEmail={setEmail} handleSubmit={handleSubmit} isLoading={isLoading} error={error} />}
-            {step === 'otp' && (
-              <PartnerVerifyOtp
-                email={email}
-                // onBack={() => setStep('start')}
-              />
-            )}
+            {step === 'otp' && <PartnerVerifyOtp email={email} />}
           </div>
         </div>
       </div>

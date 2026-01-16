@@ -14,16 +14,16 @@ import ForgotPassword from '../pages/authentication/ForgotPassword';
 import ResetPassword from '../pages/authentication/ResetPassword';
 import OTPVerify from '../pages/authentication/OTPVerify';
 import RegisterForm from '../pages/authentication/RegisterForm';
-import LandingPage from '../pages/LandingPage';
+import LandingPage from '../pages/public/LandingPage';
 import { authRoles } from '../guards/authRoles';
 import NotFound from '../components/NotFound';
 import ChangePasswordPage from '../components/profile/ChangePasswordPage';
 import ProfilePage from '../components/profile/ProfilePage';
 import OrdersPage from '../components/orders/OrdersPage';
 import PartnerLoginPage from '../pages/authentication/partner-login/PartnerLoginPage';
-import RestaurantInformation from '../pages/authentication/partner-login/RestaurantInformation';
-import RestaurantDocuments from '../pages/authentication/partner-login/RestaurantDocuments';
 import RestaurantOnboardingLayout from '../pages/authentication/partner-login/RestaurantOnboardingLayout';
+import RestaurantPending from '../pages/authentication/partner-login/RestaurantPending';
+import RestaurantsList from '../pages/restaurants/RestaurantsList';
 
 const routes: RouteObject[] = [
   {
@@ -34,6 +34,7 @@ const routes: RouteObject[] = [
     ),
     children: [
       { path: PATHS.DASHBOARD, element: <Dashboard /> },
+      { path: PATHS.RESTAURANTS, element: <RestaurantsList /> },
       { path: PATHS.MENU, element: <MenuManagement /> },
       { path: PATHS.BOOKINGS, element: <BookingsPage /> },
       { path: PATHS.DISCOUNTS, element: <DiscountsPage /> },
@@ -64,10 +65,10 @@ const routes: RouteObject[] = [
     path: SESSION_PATHS.RESTAURANT_INFORMATION,
     element: <RestaurantOnboardingLayout />,
   },
-  // {
-  //   path: SESSION_PATHS.RESTAURANT_DOCUMENTS,
-  //   element: <RestaurantDocuments />,
-  // },
+  {
+    path: SESSION_PATHS.RESTAURANT_PENDING,
+    element: <RestaurantPending />,
+  },
 ];
 
 export default routes;

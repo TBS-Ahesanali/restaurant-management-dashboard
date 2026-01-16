@@ -2,8 +2,8 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import useAuth from '../hooks/useAuth';
-import Header from '../pages/Header';
-import Footer from '../pages/Footer';
+import Header from '../pages/public/Header';
+import Footer from '../pages/public/Footer';
 
 interface UnAuthGuardProps {
   children: ReactNode;

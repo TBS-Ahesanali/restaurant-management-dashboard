@@ -1,7 +1,7 @@
 import React, { useState, useRef, ChangeEvent, KeyboardEvent, useEffect } from 'react';
 import useAuth from '../../../hooks/useAuth';
 import { useSnackbar } from 'notistack';
-import { SESSION_PATHS } from '../../../routes/paths';
+import { PATHS, SESSION_PATHS } from '../../../routes/paths';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../utils/axios';
 
@@ -14,6 +14,9 @@ interface OtpResponse {
     tokens?: {
       access?: string;
     };
+    user?: any;
+    restaurant_status?: string;
+    next_step?: number;
   };
   status?: number;
   otp?: boolean;
@@ -31,7 +34,7 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email }) => {
   const [timer, setTimer] = useState(RESEND_TIMER);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { verifyOtp, resendOtp } = useAuth();
+  const { verifyOtp, resendOtp, fetchRestaurantData } = useAuth();
 
   // Timer countdown effect
   useEffect(() => {
@@ -78,20 +81,32 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email }) => {
 
     try {
       const response = (await verifyOtp({ email, otp: finalOtp })) as OtpResponse;
+
       if (response.status === 200) {
-        enqueueSnackbar(response?.message || 'OTP sent successfully', { variant: 'success' });
-        navigate(SESSION_PATHS.RESTAURANT_INFORMATION, {
-          state: {
-            data: response.data,
-          },
-        });
         const token = response?.data?.tokens?.access;
+
         if (token) {
-          localStorage.setItem('accessToken', token);
-          // axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          // Set token in localStorage and axios headers
+          const restaurantStatus = response?.data?.restaurant_status;
+          await fetchRestaurantData(token);
+
+          enqueueSnackbar(response?.message || 'OTP verified successfully', { variant: 'success' });
+          if (restaurantStatus === 'Draft') {
+            navigate(SESSION_PATHS.RESTAURANT_INFORMATION, {
+              state: { email, token },
+            });
+          } else if (restaurantStatus === 'Pending') {
+            navigate(SESSION_PATHS.RESTAURANT_PENDING);
+          } else if (restaurantStatus === 'Complete' || restaurantStatus === 'Approved') {
+            navigate(PATHS.DASHBOARD);
+          } else {
+            navigate(SESSION_PATHS.RESTAURANT_INFORMATION);
+          }
+        } else {
+          enqueueSnackbar('Token not received. Please try again.', { variant: 'error' });
         }
       } else {
-        enqueueSnackbar(response?.message || 'Failed to send OTP. Please try again.', { variant: 'error' });
+        enqueueSnackbar(response?.message || 'Failed to verify OTP. Please try again.', { variant: 'error' });
       }
     } catch (err: any) {
       enqueueSnackbar(err?.response?.data?.message || err?.message || 'Invalid OTP. Please try again.', { variant: 'error' });
@@ -109,16 +124,18 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email }) => {
 
     try {
       const response = (await resendOtp(email)) as OtpResponse;
-      console.log('response: ', response);
+
       if (response.status === 200) {
         enqueueSnackbar(response?.message || 'OTP sent successfully', { variant: 'success' });
         setTimer(RESEND_TIMER);
         setCanResend(false);
         setOtp(Array(OTP_LENGTH).fill(''));
         inputRefs.current[0]?.focus();
+      } else {
+        enqueueSnackbar(response?.message || 'Failed to resend OTP.', { variant: 'error' });
       }
     } catch (err: any) {
-      enqueueSnackbar(err.response?.message || 'Failed to resend OTP. Please try again.', { variant: 'error' });
+      enqueueSnackbar(err?.response?.data?.message || err?.message || 'Failed to resend OTP. Please try again.', { variant: 'error' });
     } finally {
       setIsLoading(false);
     }

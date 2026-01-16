@@ -1,6 +1,6 @@
 import { BsTwitterX } from 'react-icons/bs';
 import { FaFacebookF, FaInstagram } from 'react-icons/fa';
-import LOGO from '../assets/icons/Logo.svg';
+import LOGO from '../../assets/icons/Logo.svg';
 
 const Footer = () => {
   return (

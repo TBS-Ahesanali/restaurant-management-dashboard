@@ -2,25 +2,12 @@ import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 
-export interface RestaurantDocumentsRef {
-  submitForm: () => void;
+interface RestaurantDocumentsProps {
+  initialData?: any;
 }
 
 const validationSchema = Yup.object({
-  ownerName: Yup.string().trim().required("Owner's full name is required"),
-  restaurantName: Yup.string().trim().required('Restaurant name is required'),
-  address: Yup.string().trim().required('Address is required'),
-  email: Yup.string().email('Invalid email address').required('Email is required'),
-  mobile: Yup.string()
-    .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number')
-    .required('Mobile number is required'),
-  whatsappSame: Yup.boolean(),
-  whatsappNumber: Yup.string().when('whatsappSame', {
-    is: false,
-    then: (schema) => schema.matches(/^[6-9]\d{9}$/, 'Enter a valid WhatsApp number').required('WhatsApp number is required'),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  pan: Yup.string()
+  pan_number: Yup.string()
     .trim()
     .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Enter a valid PAN number (e.g., ABCDE1234F)')
     .required('PAN number is required'),
@@ -32,7 +19,7 @@ const validationSchema = Yup.object({
     .trim()
     .matches(/^[0-9]{14}$/, 'Enter a valid 14-digit FSSAI number')
     .required('FSSAI number is required'),
-  ifsc: Yup.string()
+  ifsc_code: Yup.string()
     .trim()
     .matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Enter a valid IFSC code (e.g., SBIN0001234)')
     .required('IFSC code is required'),
@@ -42,20 +29,14 @@ const validationSchema = Yup.object({
     .required('Account number is required'),
 });
 
-const RestaurantDocuments = forwardRef<any, any>((props, ref) => {
+const RestaurantDocuments = forwardRef<any, RestaurantDocumentsProps>(({ initialData }, ref) => {
   const formik = useFormik({
     initialValues: {
-      ownerName: '',
-      restaurantName: '',
-      address: '',
-      email: '',
-      mobile: '',
-      whatsappSame: true,
-      whatsappNumber: '',
-      pan: '',
+      bank_name: '',
+      pan_number: '',
       gstin: '',
       fssai: '',
-      ifsc: '',
+      ifsc_code: '',
       accountNumber: '',
     },
     validationSchema,
@@ -64,37 +45,19 @@ const RestaurantDocuments = forwardRef<any, any>((props, ref) => {
     onSubmit: () => {},
   });
 
-  // Fetch data on mount
-  // useEffect(() => {
-  //   fetchRestaurantData();
-  // }, []);
-
-  // const fetchRestaurantData = async () => {
-  //   try {
-  //     const response = await axiosInstance.get('/admin_control/restaurant-creation');
-
-  //     if (response.data) {
-  //       const data = response.data;
-
-  //       formik.setValues({
-  //         ownerName: data.owner_full_name || '',
-  //         restaurantName: data.restaurant_name || '',
-  //         address: data.address || '',
-  //         email: data.owner_email || '',
-  //         mobile: data.owner_phone_number?.toString() || '',
-  //         whatsappSame: data.owner_phone_number === data.whatsapp_number,
-  //         whatsappNumber: data.whatsapp_number?.toString() || '',
-  //         pan: data.pan || '',
-  //         gstin: data.gstin || '',
-  //         fssai: data.fssai || '',
-  //         ifsc: data.ifsc_code || '',
-  //         accountNumber: data.account_number || '',
-  //       });
-  //     }
-  //   } catch (error) {
-  //     console.log('Error fetching data:', error);
-  //   }
-  // };
+  // Update form values when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      formik.setValues({
+        bank_name: initialData.bank_name || '',
+        pan_number: initialData.pan_number || '',
+        gstin: initialData.gstin || '',
+        fssai: initialData.fssai || '',
+        ifsc_code: initialData.ifsc_code || '',
+        accountNumber: initialData.account_number || '',
+      });
+    }
+  }, [initialData]);
 
   useImperativeHandle(ref, () => ({
     submit: formik.submitForm,
@@ -106,52 +69,81 @@ const RestaurantDocuments = forwardRef<any, any>((props, ref) => {
 
   return (
     <>
-      <p className='text-muted mb-3 small'>FSSAI, PAN, GST and Bank account.</p>
+      <p className='text-muted mb-3 small'>Bank account and FSSAI, PAN, GST.</p>
 
       {/* Previous Step Data (Read-only) */}
-      <div className='mb-4 p-3 bg-light rounded'>
-        <h6 className='mb-3'>Restaurant Information</h6>
-        <div className='row'>
-          <div className='col-md-6 mb-2'>
-            <small className='text-muted'>Owner Name:</small>
-            <div className='fw-bold'>{formik.values.ownerName || '-'}</div>
-          </div>
-          <div className='col-md-6 mb-2'>
-            <small className='text-muted'>Restaurant Name:</small>
-            <div className='fw-bold'>{formik.values.restaurantName || '-'}</div>
-          </div>
-          <div className='col-12 mb-2'>
-            <small className='text-muted'>Address:</small>
-            <div className='fw-bold'>{formik.values.address || '-'}</div>
-          </div>
-          <div className='col-md-6 mb-2'>
-            <small className='text-muted'>Email:</small>
-            <div className='fw-bold'>{formik.values.email || '-'}</div>
-          </div>
-          <div className='col-md-6 mb-2'>
-            <small className='text-muted'>Mobile:</small>
-            <div className='fw-bold'>{formik.values.mobile || '-'}</div>
+      {/* {initialData && (
+        <div className='mb-4 p-3 bg-light rounded'>
+          <h6 className='mb-3'>Restaurant Information</h6>
+          <div className='row'>
+            <div className='col-md-6 mb-2'>
+              <small className='text-muted'>Owner Name:</small>
+              <div className='fw-bold'>{initialData.owner_full_name || '-'}</div>
+            </div>
+            <div className='col-md-6 mb-2'>
+              <small className='text-muted'>Restaurant Name:</small>
+              <div className='fw-bold'>{initialData.restaurant_name || '-'}</div>
+            </div>
+            <div className='col-12 mb-2'>
+              <small className='text-muted'>Address:</small>
+              <div className='fw-bold'>{initialData.address || '-'}</div>
+            </div>
+            <div className='col-md-6 mb-2'>
+              <small className='text-muted'>Email:</small>
+              <div className='fw-bold'>{initialData.owner_email || '-'}</div>
+            </div>
+            <div className='col-md-6 mb-2'>
+              <small className='text-muted'>Mobile:</small>
+              <div className='fw-bold'>{initialData.owner_phone_number || '-'}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )} */}
 
       {/* FSSAI & PAN */}
-      <div className='mb-4'>
-        <label className='form-label'>FSSAI Number*</label>
-        <input type='text' className={`form-control mb-1 ${showError('fssai') ? 'is-invalid' : ''}`} {...formik.getFieldProps('fssai')} placeholder='Enter 14-digit FSSAI number' />
-        {showError('fssai') && <div className='invalid-feedback'>{formik.errors.fssai}</div>}
-
-        <label className='form-label mt-3'>PAN Number*</label>
+      <div className='mb-2'>
+        <label className='form-label'>Bank Name*</label>
         <input
           type='text'
-          className={`form-control mb-1 ${showError('pan') ? 'is-invalid' : ''}`}
-          {...formik.getFieldProps('pan')}
+          className={`form-control mb-1 ${showError('bank_name') ? 'is-invalid' : ''}`}
+          {...formik.getFieldProps('bank_name')}
+          placeholder='Enter 14-digit FSSAI number'
+        />
+        {showError('bank_name') && <div className='invalid-feedback'>{formik.errors.bank_name}</div>}
+        <label className='form-label'>IFSC Code*</label>
+        <input
+          type='text'
+          className={`form-control mb-1 ${showError('ifsc_code') ? 'is-invalid' : ''}`}
+          {...formik.getFieldProps('ifsc_code')}
+          placeholder='e.g., SBIN0001234'
+          style={{ textTransform: 'uppercase' }}
+        />
+        {showError('ifsc_code') && <div className='invalid-feedback'>{formik.errors.ifsc_code}</div>}
+
+        <label className='form-label'>Bank Account Number*</label>
+        <input
+          type='text'
+          className={`form-control mb-1 ${showError('accountNumber') ? 'is-invalid' : ''}`}
+          {...formik.getFieldProps('accountNumber')}
+          placeholder='Enter bank account number'
+        />
+        {showError('accountNumber') && <div className='invalid-feedback'>{formik.errors.accountNumber}</div>}
+        <small className='text-muted d-block mt-2'>Please ensure your bank account details are correct</small>
+      </div>
+
+      {/* Bank Details */}
+      <div className='mb-4'>
+        <label className='form-label mt-2'>PAN Number*</label>
+        <input
+          type='text'
+          className={`form-control mb-1 ${showError('pan_number') ? 'is-invalid' : ''}`}
+          {...formik.getFieldProps('pan_number')}
           placeholder='e.g., ABCDE1234F'
           style={{ textTransform: 'uppercase' }}
         />
-        {showError('pan') && <div className='invalid-feedback'>{formik.errors.pan}</div>}
+        {showError('pan_number') && <div className='invalid-feedback'>{formik.errors.pan_number}</div>}
 
-        <label className='form-label mt-3'>GSTIN*</label>
+        <label className='form-label'>GSTIN*</label>
         <input
           type='text'
           className={`form-control mb-1 ${showError('gstin') ? 'is-invalid' : ''}`}
@@ -160,33 +152,14 @@ const RestaurantDocuments = forwardRef<any, any>((props, ref) => {
           style={{ textTransform: 'uppercase' }}
         />
         {showError('gstin') && <div className='invalid-feedback'>{formik.errors.gstin}</div>}
-      </div>
-
-      {/* Bank Details */}
-      <div className='mb-4'>
-        <label className='form-label'>IFSC Code*</label>
-        <input
-          type='text'
-          className={`form-control mb-1 ${showError('ifsc') ? 'is-invalid' : ''}`}
-          {...formik.getFieldProps('ifsc')}
-          placeholder='e.g., SBIN0001234'
-          style={{ textTransform: 'uppercase' }}
-        />
-        {showError('ifsc') && <div className='invalid-feedback'>{formik.errors.ifsc}</div>}
-
-        <label className='form-label mt-3'>Bank Account Number*</label>
-        <input
-          type='text'
-          className={`form-control mb-1 ${showError('accountNumber') ? 'is-invalid' : ''}`}
-          {...formik.getFieldProps('accountNumber')}
-          placeholder='Enter bank account number'
-        />
-        {showError('accountNumber') && <div className='invalid-feedback'>{formik.errors.accountNumber}</div>}
-
-        <small className='text-muted d-block mt-2'>Please ensure your bank account details are correct</small>
+        <label className='form-label'>FSSAI Number*</label>
+        <input type='text' className={`form-control mb-1 ${showError('fssai') ? 'is-invalid' : ''}`} {...formik.getFieldProps('fssai')} placeholder='Enter 14-digit FSSAI number' />
+        {showError('fssai') && <div className='invalid-feedback'>{formik.errors.fssai}</div>}
       </div>
     </>
   );
 });
+
+RestaurantDocuments.displayName = 'RestaurantDocuments';
 
 export default RestaurantDocuments;

@@ -1,9 +1,12 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import RestaurantInformationStep from './RestaurantInformation';
 import RestaurantDocuments from './RestaurantDocuments';
 import AuthContext from '../../../contexts/AuthContext';
-// import axiosInstance from '../utils/axios';
+import { useLocation } from 'react-router-dom';
+import { useSnackbar } from 'notistack';
+import Loader from '../../../components/Loader';
+import RestaurantMenuSetup from './RestaurantMenuSetup';
+import RestaurantPartnerContract from './RestaurantPartnerContract';
 
 const steps = [
   { title: 'Restaurant Information', desc: 'Location, Owner details, Open & Close hrs.' },
@@ -13,102 +16,56 @@ const steps = [
 ];
 
 const RestaurantOnboardingLayout: React.FC = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
-  const responseData = location.state?.data;
+  const emailFromNavigation = location.state?.email || '';
+  const accessToken = location.state?.token || '';
   const infoStepRef = useRef<any>(null);
   const documentsStepRef = useRef<any>(null);
-  const { getRestaurant, createOrUpdateRestaurant } = useContext(AuthContext);
+  const menuStepRef = useRef<any>(null);
+  const contractStepRef = useRef<any>(null);
+  const { restaurant, fetchRestaurantData, isRestaurantLoaded, createOrUpdateRestaurant } = useContext(AuthContext);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [fetchingData, setFetchingData] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [restaurantId, setRestaurantId] = useState<string | null>(null);
-  const [restaurantData, setRestaurantData] = useState<any>(null);
-  console.log('restaurantData: ', restaurantData);
-
-  // Set initial step from responseData if available
-  // useEffect(() => {
-  //   if (responseData?.next_step !== undefined && responseData?.next_step !== null) {
-  //     // next_step is 1-indexed (1, 2, 3, 4), convert to 0-indexed (0, 1, 2, 3)
-  //     const stepIndex = Math.max(0, Math.min(responseData.next_step - 1, steps.length - 1));
-  //     setCurrentStep(stepIndex);
-  //     console.log(`Setting initial step to ${stepIndex} from responseData.next_step: ${responseData.next_step}`);
-
-  //     // Set restaurant data from responseData
-  //     setRestaurantData(responseData);
-
-  //     // Set restaurant ID if available
-  //     if (responseData.restaurant_id || responseData.id) {
-  //       setRestaurantId(responseData.restaurant_id || responseData.id);
-  //     }
-  //   }
-  // }, [responseData]);
-
-  // Fetch existing restaurant data on mount
+  const [restaurantId, setRestaurantId] = useState<number | null>(null);
   useEffect(() => {
-    fetchRestaurantData();
-  }, []);
+    if (!accessToken) return;
 
-  const fetchRestaurantData = async () => {
-    try {
-      setFetchingData(true);
-      const response = await getRestaurant();
+    const loadRestaurant = async () => {
+      await fetchRestaurantData(accessToken);
+    };
 
-      if (response) {
-        const data = response.data;
-        setRestaurantData(data);
-      }
-    } catch (error: any) {
-      console.log('No existing data found:', error);
-      setCurrentStep(0);
-    } finally {
-      setFetchingData(false);
-    }
-  };
-
-  // Single API endpoint
-  // const createOrUpdateRestaurant = async (payload: any) => {
-  //   try {
-  //     const response = await axiosInstance.post('/admin_control/restaurant-creation', payload);
-  //     return response.data;
-  //   } catch (error) {
-  //     console.error('API Error:', error);
-  //     throw error;
-  //   }
-  // };
+    loadRestaurant();
+  }, [accessToken]);
 
   const handleContinue = async () => {
-    setError('');
-
     try {
       // Step 0: Restaurant Information
       if (currentStep === 0) {
         await infoStepRef.current?.submit();
 
         if (!infoStepRef.current?.isValid) {
-          setError('Please fill all required fields correctly');
+          enqueueSnackbar('Please fill all required fields correctly', { variant: 'error' });
           return;
         }
 
         setLoading(true);
         const values = infoStepRef.current.values;
 
-        const step1Payload = {
-          owner_full_name: values.ownerName,
-          restaurant_name: values.restaurantName,
-          address: values.address,
-          owner_email: values.email,
-          owner_phone_number: parseInt(values.mobile),
-          whatsapp_number: values.whatsappSame ? parseInt(values.mobile) : parseInt(values.whatsappNumber || values.mobile),
-          is_step1: true,
-        };
+        const formData = new FormData();
+        if (restaurantId) formData.append('restaurant_id', restaurantId.toString());
+        formData.append('full_name', values.full_name);
+        formData.append('restaurant_name', values.restaurant_name);
+        formData.append('address', values.address);
+        formData.append('email', values.email || emailFromNavigation);
+        formData.append('phone_number', values.phone_number);
+        formData.append('is_step1', 'true');
 
-        console.log('Step 1 API PAYLOAD 👉', step1Payload);
-        // const response = await createOrUpdateRestaurant(step1Payload);
-        const response = { restaurant_id: 'demo_restaurant_123', id: '' }; // Mock response
+        const response = await createOrUpdateRestaurant(accessToken, formData);
 
-        if (response?.restaurant_id || response?.id) {
-          setRestaurantId(response.restaurant_id || response.id);
+        if (response?.data?.data?.id || response?.data?.restaurant_id) {
+          setRestaurantId(response.data.data?.id || response.data.restaurant_id);
         }
 
         setLoading(false);
@@ -121,31 +78,24 @@ const RestaurantOnboardingLayout: React.FC = () => {
         await documentsStepRef.current?.submit();
 
         if (!documentsStepRef.current?.isValid) {
-          setError('Please fill all required fields correctly');
+          enqueueSnackbar('Please fill all required fields correctly', { variant: 'error' });
           return;
         }
 
         setLoading(true);
         const values = documentsStepRef.current.values;
 
-        const step2Payload = {
-          ...(restaurantId && { restaurant_id: restaurantId }),
-          owner_full_name: values.ownerName,
-          restaurant_name: values.restaurantName,
-          address: values.address,
-          owner_email: values.email,
-          owner_phone_number: parseInt(values.mobile),
-          whatsapp_number: values.whatsappSame ? parseInt(values.mobile) : parseInt(values.whatsappNumber || values.mobile),
-          pan: values.pan,
-          gstin: values.gstin,
-          ifsc_code: values.ifsc,
-          account_number: values.accountNumber,
-          fssai: values.fssai,
-          is_step2: true,
-        };
+        const formData = new FormData();
+        if (restaurantId) formData.append('restaurant_id', restaurantId.toString());
+        formData.append('bank_name', values.bank_name);
+        formData.append('pan_number', values.pan_number);
+        formData.append('gstin', values.gstin);
+        formData.append('ifsc_code', values.ifsc_code);
+        formData.append('account_number', values.accountNumber);
+        formData.append('fssai', values.fssai);
+        formData.append('is_step2', 'true');
 
-        console.log('Step 2 API PAYLOAD 👉', step2Payload);
-        // await createOrUpdateRestaurant(step2Payload);
+        await createOrUpdateRestaurant(accessToken, formData);
 
         setLoading(false);
         setCurrentStep(2);
@@ -154,16 +104,25 @@ const RestaurantOnboardingLayout: React.FC = () => {
 
       // Step 2: Menu Setup
       if (currentStep === 2) {
+        await menuStepRef.current?.submit();
+
+        if (!menuStepRef.current?.isValid) {
+          enqueueSnackbar('Please upload menu file', { variant: 'error' });
+          return;
+        }
+
         setLoading(true);
+        const values = menuStepRef.current.values;
 
-        const step3Payload = {
-          restaurant_id: restaurantId,
-          is_step3: true,
-          // Add menu fields when ready
-        };
+        const formData = new FormData();
+        if (restaurantId) formData.append('restaurant_id', restaurantId.toString());
+        if (values.menu_file) {
+          formData.append('menu_file', values.menu_file);
+        }
+        formData.append('is_step3', 'true');
 
-        console.log('Step 3 API PAYLOAD 👉', step3Payload);
-        // await createOrUpdateRestaurant(step3Payload);
+        console.log('Step 3 API PAYLOAD 👉 FormData with menu_file');
+        await createOrUpdateRestaurant(accessToken, formData);
 
         setLoading(false);
         setCurrentStep(3);
@@ -172,71 +131,54 @@ const RestaurantOnboardingLayout: React.FC = () => {
 
       // Step 3: Partner Contract
       if (currentStep === 3) {
+        await contractStepRef.current?.submit();
+
+        if (!contractStepRef.current?.isValid) {
+          enqueueSnackbar('Please agree to terms and conditions', { variant: 'error' });
+          return;
+        }
+
         setLoading(true);
+        const values = contractStepRef.current.values;
 
-        const step4Payload = {
-          restaurant_id: restaurantId,
-          is_step4: true,
-          // Add contract fields when ready
-        };
+        const formData = new FormData();
+        if (restaurantId) formData.append('restaurant_id', restaurantId.toString());
+        formData.append('contract_agreed', values.contract_agreed ? 'true' : 'false');
+        formData.append('agreed_at', values.agreed_at);
+        formData.append('is_step4', 'true');
 
-        console.log('Step 4 API PAYLOAD 👉', step4Payload);
-        // await createOrUpdateRestaurant(step4Payload);
+        console.log('Step 4 API PAYLOAD 👉 FormData with contract agreement');
+        await createOrUpdateRestaurant(accessToken, formData);
 
         setLoading(false);
-        alert('Restaurant onboarding completed!');
+        enqueueSnackbar('Restaurant onboarding completed successfully!', { variant: 'success' });
         // navigate('/dashboard');
         return;
       }
     } catch (err: any) {
       setLoading(false);
-      setError(err?.response?.data?.message || err?.message || 'An error occurred. Please try again.');
-      console.error('Error:', err);
+      enqueueSnackbar(err?.response?.data?.message || err?.message || 'An error occurred. Please try again.', { variant: 'error' });
     }
   };
 
   const handleBack = () => {
-    setError('');
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
   const renderStepContent = () => {
-    if (fetchingData) {
-      return (
-        <div className='text-center py-5'>
-          <div className='spinner-border text-success' role='status'>
-            <span className='visually-hidden'>Loading...</span>
-          </div>
-          <p className='mt-3 text-muted'>Loading restaurant data...</p>
-        </div>
-      );
+    if (!isRestaurantLoaded) {
+      return <Loader />;
     }
 
     switch (currentStep) {
       case 0:
-        return <RestaurantInformationStep ref={infoStepRef} initialData={restaurantData} />;
+        return <RestaurantInformationStep ref={infoStepRef} initialData={restaurant} email={emailFromNavigation} />;
       case 1:
-        return (
-          <RestaurantDocuments
-            data={responseData}
-            // ref={documentsStepRef}
-            updateData={responseData}
-          />
-        );
+        return <RestaurantDocuments ref={documentsStepRef} initialData={restaurant} />;
       case 2:
-        return (
-          <div className='p-4'>
-            <p>📋 Menu setup coming soon</p>
-            <small className='text-muted'>Upload and organize your restaurant menu</small>
-          </div>
-        );
+        return <RestaurantMenuSetup ref={menuStepRef} initialData={restaurant} />;
       case 3:
-        return (
-          <div className='p-4'>
-            <p>📝 Partner contract coming soon</p>
-            <small className='text-muted'>Review and sign the partnership agreement</small>
-          </div>
-        );
+        return <RestaurantPartnerContract ref={contractStepRef} initialData={restaurant} contractPdfUrl={restaurant?.contract_pdf_url || 'https://example.com/contract.pdf'} />;
       default:
         return null;
     }
@@ -261,25 +203,10 @@ const RestaurantOnboardingLayout: React.FC = () => {
             <main className='onboarding-content'>
               <h2 className='onboarding-title'>{steps[currentStep].title}</h2>
 
-              {/* {error && (
-                <div className='alert alert-danger alert-dismissible fade show' role='alert'>
-                  {error}
-                  <button type='button' className='btn-close' onClick={() => setError('')} aria-label='Close'></button>
-                </div>
-              )} */}
-
-              {/* {restaurantId && (
-                <div className='alert alert-info'>
-                  <small>
-                    <strong>Restaurant ID:</strong> {restaurantId}
-                  </small>
-                </div>
-              )} */}
-
               <div className='onboarding-card'>
                 {renderStepContent()}
 
-                {!fetchingData && (
+                {isRestaurantLoaded && (
                   <div className='d-flex justify-content-between mt-4'>
                     <button className='btn btn-outline-secondary' disabled={currentStep === 0 || loading} onClick={handleBack}>
                       Back

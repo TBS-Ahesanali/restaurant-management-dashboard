@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import LOGO from '../assets/icons/Logo.svg';
-import { SESSION_PATHS } from '../routes/paths';
+import LOGO from '../../assets/icons/Logo.svg';
+import { SESSION_PATHS } from '../../routes/paths';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);

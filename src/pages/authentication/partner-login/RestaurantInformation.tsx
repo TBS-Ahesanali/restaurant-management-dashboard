@@ -1,24 +1,19 @@
-import React, { useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 
-export interface RestaurantInfoRef {
-  submitForm: () => void;
-  isValid: boolean;
-  values: any;
-}
-
 interface RestaurantInfoProps {
   initialData?: any;
+  email?: string;
 }
 
 const validationSchema = Yup.object({
-  ownerName: Yup.string().trim().required("Owner's full name is required"),
+  full_name: Yup.string().trim().required("Owner's full name is required"),
   restaurant_name: Yup.string().trim().required('Restaurant name is required'),
   address: Yup.string().trim().required('Address is required'),
   email: Yup.string().email('Invalid email address').required('Email is required'),
-  mobile: Yup.string()
-    .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number')
+  phone_number: Yup.string()
+    .matches(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number')
     .required('Mobile number is required'),
   whatsappSame: Yup.boolean(),
   whatsappNumber: Yup.string().when('whatsappSame', {
@@ -28,17 +23,16 @@ const validationSchema = Yup.object({
   }),
 });
 
-const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initialData }, ref) => {
-  console.log('initialData: ', initialData);
+const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initialData, email }, ref) => {
   const formik = useFormik({
     initialValues: {
-      ownerName: '',
+      full_name: '',
       restaurant_name: '',
       address: '',
       email: '',
-      mobile: '',
-      whatsappSame: true,
-      whatsappNumber: '',
+      phone_number: '',
+      // whatsappSame: true,
+      // whatsappNumber: '',
     },
     validationSchema,
     validateOnBlur: true,
@@ -49,16 +43,18 @@ const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initia
   // Update form values when initialData changes
   useEffect(() => {
     if (initialData) {
-      const isSameNumber = initialData.owner_phone_number === initialData.whatsapp_number;
+      const mobileStr = initialData.phone_number?.toString() || '';
+      // const whatsappStr = initialData.whatsapp_number?.toString() || '';
+      // const isSameNumber = mobileStr && mobileStr === whatsappStr;
 
       formik.setValues({
-        ownerName: initialData.owner_full_name || '',
+        full_name: initialData.full_name || '',
         restaurant_name: initialData.restaurant_name || '',
         address: initialData.address || '',
-        email: initialData.owner_email || '',
-        mobile: initialData.owner_phone_number?.toString() || '',
-        whatsappSame: isSameNumber,
-        whatsappNumber: !isSameNumber ? initialData.whatsapp_number?.toString() || '' : '',
+        email: initialData.email || email || '',
+        phone_number: mobileStr,
+        // whatsappSame: isSameNumber,
+        // whatsappNumber: !isSameNumber ? whatsappStr : '',
       });
     }
   }, [initialData]);
@@ -78,8 +74,8 @@ const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initia
       {/* Owner & Restaurant */}
       <div className='mb-4'>
         <label className='form-label'>Owner's Full Name*</label>
-        <input type='text' className={`form-control mb-1 ${showError('ownerName') ? 'is-invalid' : ''}`} {...formik.getFieldProps('ownerName')} />
-        {showError('ownerName') && <div className='invalid-feedback'>{formik.errors.ownerName}</div>}
+        <input type='text' className={`form-control mb-1 ${showError('full_name') ? 'is-invalid' : ''}`} {...formik.getFieldProps('full_name')} />
+        {showError('full_name') && <div className='invalid-feedback'>{formik.errors.full_name}</div>}
 
         <label className='form-label mt-3'>Restaurant Name*</label>
         <input type='text' className={`form-control mb-1 ${showError('restaurant_name') ? 'is-invalid' : ''}`} {...formik.getFieldProps('restaurant_name')} />
@@ -97,13 +93,13 @@ const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initia
         {showError('email') && <div className='invalid-feedback'>{formik.errors.email}</div>}
 
         <label className='form-label mt-3'>Mobile Number*</label>
-        <input type='tel' className={`form-control mb-1 ${showError('mobile') ? 'is-invalid' : ''}`} {...formik.getFieldProps('mobile')} />
-        {showError('mobile') && <div className='invalid-feedback'>{formik.errors.mobile}</div>}
+        <input type='tel' className={`form-control mb-1 ${showError('phone_number') ? 'is-invalid' : ''}`} {...formik.getFieldProps('phone_number')} />
+        {showError('phone_number') && <div className='invalid-feedback'>{formik.errors.phone_number}</div>}
 
-        <small className='text-muted d-block mt-2'>You will receive a verification mail on this ID</small>
+        {/* <small className='text-muted d-block mt-2'>You will receive a verification mail on this ID</small> */}
 
         {/* WhatsApp */}
-        <label className='form-label d-block mt-3'>WhatsApp Number</label>
+        {/* <label className='form-label d-block mt-3'>WhatsApp Number</label>
 
         <div className='form-check'>
           <input
@@ -131,9 +127,9 @@ const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initia
           <label className='form-check-label cursor-pointer' htmlFor='whatsappSameNo'>
             I have a different WhatsApp number
           </label>
-        </div>
+        </div> */}
 
-        {!formik.values.whatsappSame && (
+        {/* {!formik.values.whatsappSame && (
           <>
             <input
               type='tel'
@@ -143,7 +139,7 @@ const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initia
             />
             {showError('whatsappNumber') && <div className='invalid-feedback'>{formik.errors.whatsappNumber}</div>}
           </>
-        )}
+        )} */}
       </div>
     </>
   );
