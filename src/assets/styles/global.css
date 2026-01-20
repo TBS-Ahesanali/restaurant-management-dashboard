@@ -5,7 +5,7 @@
 
 :root {
   --primary-color: #ff4d4d;
-  --secondary-color: #f5f7fa;
+  --secondary-color: #eef1f4;
   --success-color: #2ecc71;
   --danger-color: #e74c3c;
   --warning-color: #f1c40f;
@@ -158,10 +158,14 @@ body {
   min-width: 240px;
   background: white;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 1021;
   transform-origin: top right;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
   transform: scale(0.95);
   opacity: 0;
   pointer-events: none;
@@ -479,7 +483,9 @@ body {
   border: 1.5px solid #ccc;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 .otp-input:focus {
   border-color: #007bff;

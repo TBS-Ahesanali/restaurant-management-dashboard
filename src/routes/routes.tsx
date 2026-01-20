@@ -1,53 +1,166 @@
+// src/routes/routes.tsx
+
 import { RouteObject } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { Outlet } from 'react-router-dom';
 import { PATHS, SESSION_PATHS } from './paths';
 import AuthGuard from '../guards/AuthGuard';
-// import UnAuthGuard from '../Guards/UnAuthGuard';
-import AdminLayout from '../layouts/Admin';
-import Dashboard from '../components/Dashboard';
-import MenuManagement from '../components/menu/MenuManagement';
-import BookingsPage from '../components/bookings/BookingsPage';
-import DiscountsPage from '../components/discounts/DiscountsPage';
 import UnAuthGuard from '../guards/UnAuthGuard';
+import OnboardingGuard from '../guards/OnboardingGuard';
+import { PermissionGuard } from '../guards/PermissionGuard';
+import { PermissionModules } from '../utils/permissions';
+import AdminLayout from '../layouts/Admin';
 import UnauthLayout from '../layouts/UnauthLayout';
-import LoginForm from '../pages/authentication/LoginForm';
-import ForgotPassword from '../pages/authentication/ForgotPassword';
-import ResetPassword from '../pages/authentication/ResetPassword';
-import OTPVerify from '../pages/authentication/OTPVerify';
-import RegisterForm from '../pages/authentication/RegisterForm';
-import LandingPage from '../pages/public/LandingPage';
-import { authRoles } from '../guards/authRoles';
-import NotFound from '../components/NotFound';
-import ChangePasswordPage from '../components/profile/ChangePasswordPage';
-import ProfilePage from '../components/profile/ProfilePage';
-import OrdersPage from '../components/orders/OrdersPage';
-import PartnerLoginPage from '../pages/authentication/partner-login/PartnerLoginPage';
-import RestaurantOnboardingLayout from '../pages/authentication/partner-login/RestaurantOnboardingLayout';
-import RestaurantPending from '../pages/authentication/partner-login/RestaurantPending';
-import RestaurantsList from '../pages/restaurants/RestaurantsList';
+import Loader from '../components/Loader';
+
+// Lazy load components
+const Dashboard = lazy(() => import('../components/Dashboard'));
+const RestaurantsList = lazy(() => import('../pages/restaurants/RestaurantsList'));
+const MenuManagement = lazy(() => import('../components/menu/MenuManagement'));
+const BookingsPage = lazy(() => import('../components/bookings/BookingsPage'));
+const DiscountsPage = lazy(() => import('../components/discounts/DiscountsPage'));
+const OrdersPage = lazy(() => import('../components/orders/OrdersPage'));
+const ChangePasswordPage = lazy(() => import('../components/profile/ChangePasswordPage'));
+const ProfilePage = lazy(() => import('../components/profile/ProfilePage'));
+const NotFound = lazy(() => import('../components/NotFound'));
+
+const LoginForm = lazy(() => import('../pages/authentication/LoginForm'));
+const RegisterForm = lazy(() => import('../pages/authentication/RegisterForm'));
+const PartnerLoginPage = lazy(() => import('../pages/authentication/partner-login/PartnerLoginPage'));
+const ForgotPassword = lazy(() => import('../pages/authentication/ForgotPassword'));
+const ResetPassword = lazy(() => import('../pages/authentication/ResetPassword'));
+const OTPVerify = lazy(() => import('../pages/authentication/OTPVerify'));
+const LandingPage = lazy(() => import('../pages/public/LandingPage'));
+const RestaurantOnboardingLayout = lazy(() => import('../pages/authentication/partner-login/RestaurantOnboardingLayout'));
+const RestaurantPending = lazy(() => import('../pages/authentication/partner-login/RestaurantPending'));
+
+const renderFallback = () => <Loader />;
 
 const routes: RouteObject[] = [
+  // Protected Routes with Permissions
   {
     element: (
-      <AuthGuard allowedRoles={[authRoles.SUPER_ADMIN]}>
-        <AdminLayout />
+      <AuthGuard>
+        <AdminLayout>
+          <Suspense fallback={renderFallback()}>
+            <Outlet />
+          </Suspense>
+        </AdminLayout>
       </AuthGuard>
     ),
     children: [
-      { path: PATHS.DASHBOARD, element: <Dashboard /> },
-      { path: PATHS.RESTAURANTS, element: <RestaurantsList /> },
-      { path: PATHS.MENU, element: <MenuManagement /> },
-      { path: PATHS.BOOKINGS, element: <BookingsPage /> },
-      { path: PATHS.DISCOUNTS, element: <DiscountsPage /> },
-      { path: PATHS.ORDERS, element: <OrdersPage /> },
-      { path: PATHS.CHANGEPASSWORD, element: <ChangePasswordPage /> },
-      { path: PATHS.PROFILE, element: <ProfilePage /> },
-      { path: PATHS.NOT_FOUND, element: <NotFound /> },
+      {
+        path: PATHS.DASHBOARD,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.DASHBOARD}>
+            <Dashboard />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.RESTAURANTS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.RESTAURANTS}>
+            <RestaurantsList />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.MENU,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.MENU_MANAGEMENT}>
+            <MenuManagement />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.BOOKINGS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.BOOKINGS}>
+            <BookingsPage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.DISCOUNTS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.DISCOUNTS_OFFERS}>
+            <DiscountsPage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.ORDERS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.ORDERS}>
+            <OrdersPage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: '/customers',
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.CUSTOMERS}>
+            <div>Customers Page (To be created)</div>
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: '/reports',
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.REPORTS}>
+            <div>Reports Page (To be created)</div>
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: '/notifications',
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.NOTIFICATIONS}>
+            <div>Notifications Page (To be created)</div>
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: '/settings',
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.SETTINGS}>
+            <div>Settings Page (To be created)</div>
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.PROFILE,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.PROFILE}>
+            <ProfilePage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.CHANGEPASSWORD,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.CHANGE_PASSWORD}>
+            <ChangePasswordPage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.NOT_FOUND,
+        element: <NotFound />,
+      },
     ],
   },
+
+  // Public/Unauthenticated Routes
   {
     element: (
       <UnAuthGuard>
-        <UnauthLayout />
+        <UnauthLayout>
+          <Suspense fallback={renderFallback()}>
+            <Outlet />
+          </Suspense>
+        </UnauthLayout>
       </UnAuthGuard>
     ),
     children: [
@@ -61,13 +174,35 @@ const routes: RouteObject[] = [
       { path: PATHS.NOT_FOUND, element: <NotFound /> },
     ],
   },
+
+  // Restaurant Onboarding Routes (Protected with OnboardingGuard)
   {
     path: SESSION_PATHS.RESTAURANT_INFORMATION,
-    element: <RestaurantOnboardingLayout />,
+    element: (
+      <OnboardingGuard>
+        <Suspense fallback={renderFallback()}>
+          <RestaurantOnboardingLayout />
+        </Suspense>
+      </OnboardingGuard>
+    ),
   },
   {
     path: SESSION_PATHS.RESTAURANT_PENDING,
-    element: <RestaurantPending />,
+    element: (
+      <Suspense fallback={renderFallback()}>
+        <RestaurantPending />
+      </Suspense>
+    ),
+  },
+
+  // Catch-all 404
+  {
+    path: '*',
+    element: (
+      <Suspense fallback={renderFallback()}>
+        <NotFound />
+      </Suspense>
+    ),
   },
 ];
 

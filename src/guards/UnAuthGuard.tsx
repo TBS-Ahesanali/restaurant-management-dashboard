@@ -1,28 +1,24 @@
+// src/guards/UnAuthGuard.tsx
+
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import useAuth from '../hooks/useAuth';
-import Header from '../pages/public/Header';
-import Footer from '../pages/public/Footer';
 
 interface UnAuthGuardProps {
   children: ReactNode;
 }
 
 const UnAuthGuard = ({ children }: UnAuthGuardProps) => {
-  const { user } = useAuth(); // Get authentication status
+  const { user, isAuthenticated } = useAuth();
 
-  if (user) {
+  // If user is authenticated, redirect to dashboard
+  if (isAuthenticated && user) {
     return <Navigate to={PATHS.DASHBOARD} replace />;
   }
 
-  return (
-    <>
-      <Header />
-      {children}
-      <Footer />
-    </>
-  );
+  // User is not authenticated, render children (public pages)
+  return <>{children}</>;
 };
 
 export default UnAuthGuard;

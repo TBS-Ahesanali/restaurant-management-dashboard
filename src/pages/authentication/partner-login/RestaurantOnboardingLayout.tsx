@@ -2,11 +2,12 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import RestaurantInformationStep from './RestaurantInformation';
 import RestaurantDocuments from './RestaurantDocuments';
 import AuthContext from '../../../contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import Loader from '../../../components/Loader';
 import RestaurantMenuSetup from './RestaurantMenuSetup';
 import RestaurantPartnerContract from './RestaurantPartnerContract';
+import { SESSION_PATHS } from '../../../routes/paths';
 
 const steps = [
   { title: 'Restaurant Information', desc: 'Location, Owner details, Open & Close hrs.' },
@@ -16,10 +17,11 @@ const steps = [
 ];
 
 const RestaurantOnboardingLayout: React.FC = () => {
-  const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const emailFromNavigation = location.state?.email || '';
-  const accessToken = location.state?.token || '';
+  const accessToken = location.state?.token || localStorage.getItem('accessToken');
   const infoStepRef = useRef<any>(null);
   const documentsStepRef = useRef<any>(null);
   const menuStepRef = useRef<any>(null);
@@ -29,8 +31,12 @@ const RestaurantOnboardingLayout: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [restaurantId, setRestaurantId] = useState<number | null>(null);
+
   useEffect(() => {
-    if (!accessToken) return;
+    if (!accessToken) {
+      navigate(SESSION_PATHS.PARTNER_LOGIN, { replace: true });
+      return;
+    }
 
     const loadRestaurant = async () => {
       await fetchRestaurantData(accessToken);
@@ -121,7 +127,6 @@ const RestaurantOnboardingLayout: React.FC = () => {
         }
         formData.append('is_step3', 'true');
 
-        console.log('Step 3 API PAYLOAD 👉 FormData with menu_file');
         await createOrUpdateRestaurant(accessToken, formData);
 
         setLoading(false);
@@ -129,7 +134,7 @@ const RestaurantOnboardingLayout: React.FC = () => {
         return;
       }
 
-      // Step 3: Partner Contract
+      // Step 3: Partner Contract - FINAL STEP
       if (currentStep === 3) {
         await contractStepRef.current?.submit();
 
@@ -143,16 +148,20 @@ const RestaurantOnboardingLayout: React.FC = () => {
 
         const formData = new FormData();
         if (restaurantId) formData.append('restaurant_id', restaurantId.toString());
-        formData.append('contract_agreed', values.contract_agreed ? 'true' : 'false');
-        formData.append('agreed_at', values.agreed_at);
+        formData.append('is_contract_partner', values.is_contract_partner ? 'true' : 'false');
         formData.append('is_step4', 'true');
 
-        console.log('Step 4 API PAYLOAD 👉 FormData with contract agreement');
+        // Submit the final step
         await createOrUpdateRestaurant(accessToken, formData);
+
+        // Refresh restaurant data to get updated status
+        await fetchRestaurantData(accessToken);
 
         setLoading(false);
         enqueueSnackbar('Restaurant onboarding completed successfully!', { variant: 'success' });
-        // navigate('/dashboard');
+
+        // Navigate to pending page
+        window.location.href = SESSION_PATHS.RESTAURANT_PENDING;
         return;
       }
     } catch (err: any) {
@@ -216,7 +225,7 @@ const RestaurantOnboardingLayout: React.FC = () => {
                       {loading ? (
                         <>
                           <span className='spinner-border spinner-border-sm me-2' role='status' aria-hidden='true'></span>
-                          Processing...
+                          {currentStep === steps.length - 1 ? 'Completing...' : 'Processing...'}
                         </>
                       ) : currentStep === steps.length - 1 ? (
                         'Finish'

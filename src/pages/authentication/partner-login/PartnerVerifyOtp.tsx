@@ -3,7 +3,6 @@ import useAuth from '../../../hooks/useAuth';
 import { useSnackbar } from 'notistack';
 import { PATHS, SESSION_PATHS } from '../../../routes/paths';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../../utils/axios';
 
 interface PartnerVerifyOtpProps {
   email: string;
@@ -86,21 +85,26 @@ const PartnerVerifyOtp: React.FC<PartnerVerifyOtpProps> = ({ email }) => {
         const token = response?.data?.tokens?.access;
 
         if (token) {
-          // Set token in localStorage and axios headers
           const restaurantStatus = response?.data?.restaurant_status;
           await fetchRestaurantData(token);
 
           enqueueSnackbar(response?.message || 'OTP verified successfully', { variant: 'success' });
+
+          // Navigate based on restaurant status with replace to prevent back navigation
           if (restaurantStatus === 'Draft') {
             navigate(SESSION_PATHS.RESTAURANT_INFORMATION, {
               state: { email, token },
+              replace: true,
             });
           } else if (restaurantStatus === 'Pending') {
-            navigate(SESSION_PATHS.RESTAURANT_PENDING);
+            navigate(SESSION_PATHS.RESTAURANT_PENDING, { replace: true });
           } else if (restaurantStatus === 'Complete' || restaurantStatus === 'Approved') {
-            navigate(PATHS.DASHBOARD);
+            navigate(PATHS.DASHBOARD, { replace: true });
           } else {
-            navigate(SESSION_PATHS.RESTAURANT_INFORMATION);
+            navigate(SESSION_PATHS.RESTAURANT_INFORMATION, {
+              state: { email, token },
+              replace: true,
+            });
           }
         } else {
           enqueueSnackbar('Token not received. Please try again.', { variant: 'error' });

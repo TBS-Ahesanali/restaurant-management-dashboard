@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useEffect } from 'react';
 
 interface PartnerContractProps {
   initialData?: any;
@@ -9,6 +9,12 @@ const RestaurantPartnerContract = forwardRef<any, PartnerContractProps>(({ initi
   const [currentPage, setCurrentPage] = useState(1);
   const [isAgreed, setIsAgreed] = useState(false);
   const totalPages = 9;
+
+  useEffect(() => {
+    if (initialData?.is_contract_partner) {
+      setIsAgreed(initialData.is_contract_partner === true || initialData.is_contract_partner === 'true');
+    }
+  }, [initialData]);
 
   const handleDownload = () => {
     if (contractPdfUrl) {
@@ -40,8 +46,7 @@ const RestaurantPartnerContract = forwardRef<any, PartnerContractProps>(({ initi
     },
     isValid: isAgreed,
     values: {
-      contract_agreed: isAgreed,
-      agreed_at: new Date().toISOString(),
+      is_contract_partner: isAgreed,
     },
   }));
 
@@ -79,7 +84,7 @@ const RestaurantPartnerContract = forwardRef<any, PartnerContractProps>(({ initi
             </svg>
           </button>
 
-          <button className='btn btn-sm btn-outline-primary ms-3' onClick={handleDownload} disabled={!contractPdfUrl}>
+          <button className='btn btn-sm btn-outline-primary ms-3 d-flex' onClick={handleDownload} disabled={!contractPdfUrl}>
             <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' className='me-1'>
               <path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
               <polyline points='7 10 12 15 17 10' />

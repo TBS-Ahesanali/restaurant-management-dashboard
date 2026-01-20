@@ -129,7 +129,7 @@ const RestaurantsList: React.FC = () => {
           page_size: rowsPerPage,
           search: debouncedSearch || undefined,
           status: filters.status !== 'All' ? filters.status : undefined,
-        })
+        }),
       ).unwrap();
       if (shouldRestoreFocusRef.current) {
         requestAnimationFrame(() => {
@@ -294,12 +294,12 @@ const RestaurantsList: React.FC = () => {
                       </td>
                       <td className='px-6 py-4'>
                         <div className='text-sm text-gray-600 max-w-xs truncate' title={restaurant.description}>
-                          {restaurant.description}
+                          {restaurant.description || '-'}
                         </div>
                       </td>
                       <td className='px-6 py-4'>
                         <div className='text-sm text-gray-600 max-w-xs truncate' title={restaurant.address}>
-                          {restaurant.address}
+                          {restaurant.address || '-'}
                         </div>
                       </td>
                       <td className='px-6 py-4'>
@@ -327,16 +327,16 @@ const RestaurantsList: React.FC = () => {
             </table>
           </div>
 
-          {totalCount > rowsPerPage && (
-            <Pagination
-              totalItems={totalCount}
-              currentPage={currentPage}
-              rowsPerPage={rowsPerPage}
-              rowsPerPageOptions={[10, 20, 50, 100]}
-              onPageChange={setCurrentPage}
-              onRowsPerPageChange={setRowsPerPage}
-            />
-          )}
+          {/* {totalCount > rowsPerPage && ( */}
+          <Pagination
+            totalItems={totalCount}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={setRowsPerPage}
+          />
+          {/* )} */}
         </div>
 
         {/* Cards - Mobile/Tablet */}

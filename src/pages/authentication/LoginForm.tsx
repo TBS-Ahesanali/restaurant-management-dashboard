@@ -34,7 +34,6 @@ const LoginForm: React.FC = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      console.log(values, 'values');
       try {
         setLoading(true);
         await login(values.email.trim(), values.password);

@@ -1,10 +1,51 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import AuthContext from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { SESSION_PATHS } from '../../../routes/paths';
 
 const RestaurantPending: React.FC = () => {
   const { restaurant } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Prevent back navigation
+  useEffect(() => {
+    // Push a dummy state to prevent back navigation
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      window.history.pushState(null, '', window.location.href);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Redirect if not pending status
+  useEffect(() => {
+    if (restaurant && restaurant.status !== 'Pending') {
+      console.log('restaurant123456: ', restaurant);
+      navigate(SESSION_PATHS.PARTNER_LOGIN, { replace: true });
+    }
+  }, [restaurant, navigate]);
+
+  const handleLogout = () => {
+    // Clear all authentication data
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+
+    // Clear session storage if any
+    sessionStorage.clear();
+
+    // Navigate to partner login
+    navigate(SESSION_PATHS.PARTNER_LOGIN, { replace: true });
+
+    // Force page reload to clear all state
+    window.location.href = SESSION_PATHS.PARTNER_LOGIN;
+  };
 
   return (
     <div className='auth-container d-flex align-items-center justify-content-center' style={{ minHeight: '100vh' }}>
@@ -55,6 +96,13 @@ const RestaurantPending: React.FC = () => {
                 </ul>
               </div>
 
+              {/* Warning Message */}
+              <div className='alert alert-warning mt-4' role='alert'>
+                <small>
+                  <strong>Important:</strong> Please do not close this tab. You will be automatically redirected once your application is approved.
+                </small>
+              </div>
+
               {/* Contact Info */}
               <p className='text-muted mt-4' style={{ fontSize: '14px' }}>
                 Need help? Contact us at{' '}
@@ -64,13 +112,7 @@ const RestaurantPending: React.FC = () => {
               </p>
 
               {/* Logout Button */}
-              <button
-                className='btn btn-outline-secondary mt-3'
-                onClick={() => {
-                  localStorage.removeItem('accessToken');
-                  navigate('/partner-login');
-                }}
-              >
+              <button className='btn btn-outline-secondary mt-3' onClick={handleLogout}>
                 Logout
               </button>
             </div>

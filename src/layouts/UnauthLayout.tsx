@@ -1,9 +1,20 @@
-import { Outlet } from 'react-router-dom';
+// src/layouts/UnauthLayout.tsx
 
-const UnauthLayout = () => {
+import { ReactNode } from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from '../pages/public/Header';
+import Footer from '../pages/public/Footer';
+
+interface UnauthLayoutProps {
+  children?: ReactNode;
+}
+
+const UnauthLayout = ({ children }: UnauthLayoutProps) => {
   return (
-    <div>
-      <Outlet />
+    <div className='unauth-layout'>
+      <Header />
+      <main className='unauth-content'>{children || <Outlet />}</main>
+      <Footer />
     </div>
   );
 };
