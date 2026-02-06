@@ -12,11 +12,12 @@ import { PermissionModules } from '../utils/permissions';
 import AdminLayout from '../layouts/Admin';
 import UnauthLayout from '../layouts/UnauthLayout';
 import Loader from '../components/Loader';
+import ViewRestaurantDetails from '../pages/restaurants/ViewRestaurantDetails';
 
 // Lazy load components
 const Dashboard = lazy(() => import('../components/Dashboard'));
 const RestaurantsList = lazy(() => import('../pages/restaurants/RestaurantsList'));
-const MenuManagement = lazy(() => import('../components/menu/MenuManagement'));
+const MenuManagement = lazy(() => import('../pages/menuManagement'));
 const BookingsPage = lazy(() => import('../components/bookings/BookingsPage'));
 const DiscountsPage = lazy(() => import('../components/discounts/DiscountsPage'));
 const OrdersPage = lazy(() => import('../components/orders/OrdersPage'));
@@ -62,6 +63,14 @@ const routes: RouteObject[] = [
         element: (
           <PermissionGuard requiredPermission={PermissionModules.RESTAURANTS}>
             <RestaurantsList />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.VIEW_RESTAURANT_DETAILS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.RESTAURANTS}>
+            <ViewRestaurantDetails />
           </PermissionGuard>
         ),
       },

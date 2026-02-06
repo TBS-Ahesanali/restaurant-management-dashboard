@@ -21,12 +21,13 @@ const RestaurantOnboardingLayout: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const emailFromNavigation = location.state?.email || '';
+  console.log('emailFromNavigation: ', emailFromNavigation);
   const accessToken = location.state?.token || localStorage.getItem('accessToken');
   const infoStepRef = useRef<any>(null);
   const documentsStepRef = useRef<any>(null);
   const menuStepRef = useRef<any>(null);
   const contractStepRef = useRef<any>(null);
-  const { restaurant, fetchRestaurantData, isRestaurantLoaded, createOrUpdateRestaurant } = useContext(AuthContext);
+  const { restaurant, clearRestaurant, fetchRestaurantData, isRestaurantLoaded, createOrUpdateRestaurant } = useContext(AuthContext);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -153,15 +154,16 @@ const RestaurantOnboardingLayout: React.FC = () => {
 
         // Submit the final step
         await createOrUpdateRestaurant(accessToken, formData);
-
-        // Refresh restaurant data to get updated status
-        await fetchRestaurantData(accessToken);
+        // Clear restaurant from context
+        clearRestaurant();
 
         setLoading(false);
         enqueueSnackbar('Restaurant onboarding completed successfully!', { variant: 'success' });
 
         // Navigate to pending page
-        window.location.href = SESSION_PATHS.RESTAURANT_PENDING;
+        setTimeout(() => {
+          window.location.href = SESSION_PATHS.RESTAURANT_PENDING;
+        }, 500);
         return;
       }
     } catch (err: any) {
@@ -175,7 +177,7 @@ const RestaurantOnboardingLayout: React.FC = () => {
   };
 
   const renderStepContent = () => {
-    if (!isRestaurantLoaded) {
+    if (isRestaurantLoaded) {
       return <Loader />;
     }
 
@@ -215,7 +217,7 @@ const RestaurantOnboardingLayout: React.FC = () => {
               <div className='onboarding-card'>
                 {renderStepContent()}
 
-                {isRestaurantLoaded && (
+                {!isRestaurantLoaded && (
                   <div className='d-flex justify-content-between mt-4'>
                     <button className='btn btn-outline-secondary' disabled={currentStep === 0 || loading} onClick={handleBack}>
                       Back

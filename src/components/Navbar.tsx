@@ -48,7 +48,7 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
                   String(user?.profile_picture) || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=32&h=32&q=80'
                 }
                 alt='Profile'
-                className='rounded-circle'
+                className='rounded-circle max-w-8 max-h-8'
                 width='32'
                 height='32'
               />
@@ -63,7 +63,7 @@ const Navbar = ({ onToggleSidebar }: NavbarProps) => {
                       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=32&h=32&q=80'
                     }
                     alt='Profile'
-                    className='rounded-circle'
+                    className='rounded-circle max-w-8 max-h-8'
                     width='32'
                     height='32'
                   />

@@ -56,6 +56,7 @@ interface AuthContextType extends AuthState {
   initialize: () => Promise<void>;
   fetchRestaurantData: (token: any) => Promise<any>;
   createOrUpdateRestaurant: (token: string, payload: any) => Promise<any>;
+  clearRestaurant: () => void;
 }
 
 /* =========================
@@ -79,7 +80,9 @@ type AuthAction =
   | { type: 'LOGIN'; payload: { user: User } }
   | { type: 'LOGOUT' }
   | { type: 'SET_RESTAURANT'; payload: { restaurant: Restaurant | null } }
-  | { type: 'RESTAURANT_LOADED' };
+  | { type: 'RESTAURANT_FETCH_START' }
+  | { type: 'RESTAURANT_FETCH_END' }
+  | { type: 'CLEAR_RESTAURANT' };
 
 const reducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
@@ -104,21 +107,31 @@ const reducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: false,
         user: null,
         restaurant: null,
-        isRestaurantLoaded: false,
       };
     case 'SET_RESTAURANT':
       return {
         ...state,
         restaurant: action.payload.restaurant,
-        isRestaurantLoaded: true,
+        isRestaurantLoaded: false,
       };
-
-    case 'RESTAURANT_LOADED':
+    case 'RESTAURANT_FETCH_START':
       return {
         ...state,
         isRestaurantLoaded: true,
       };
 
+    case 'RESTAURANT_FETCH_END':
+      return {
+        ...state,
+        isRestaurantLoaded: false,
+      };
+
+    case 'CLEAR_RESTAURANT':
+      return {
+        ...state,
+        restaurant: null,
+        isRestaurantLoaded: false,
+      };
     default:
       return state;
   }
@@ -138,6 +151,7 @@ const AuthContext = createContext<AuthContextType>({
   initialize: async () => {},
   fetchRestaurantData: async () => Promise.reject(),
   createOrUpdateRestaurant: async () => Promise.reject(),
+  clearRestaurant: () => {},
 });
 
 interface AuthProviderProps {
@@ -174,9 +188,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const fetchRestaurantData = async (token: any) => {
+    dispatch({ type: 'RESTAURANT_FETCH_START' });
     try {
       if (!token) {
-        dispatch({ type: 'RESTAURANT_LOADED' });
         return;
       }
 
@@ -185,18 +199,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log('response: ', response);
 
       if (response.data) {
+        console.log('aah');
         dispatch({
           type: 'SET_RESTAURANT',
           payload: { restaurant: response.data },
         });
-      } else {
-        dispatch({ type: 'RESTAURANT_LOADED' });
       }
     } catch (error: any) {
       console.log('No restaurant data found:', error?.response?.message || error.message);
-      dispatch({ type: 'RESTAURANT_LOADED' });
+      dispatch({ type: 'RESTAURANT_FETCH_END' });
     }
   };
 
@@ -218,6 +232,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const clearRestaurant = () => {
+    dispatch({ type: 'CLEAR_RESTAURANT' });
+  };
+
   const login = async (email: string, password: string): Promise<AxiosResponse> => {
     try {
       const response = await axiosInstance.post('/login', { email, password });
@@ -228,6 +246,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       }
       dispatch({ type: 'LOGIN', payload: { user: response.data.user } });
+      await initialize();
       return response;
     } catch (error) {
       console.error('Login failed:', error);
@@ -319,6 +338,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         resetPassword,
         initialize,
         fetchRestaurantData,
+        clearRestaurant,
         createOrUpdateRestaurant,
       }}
     >

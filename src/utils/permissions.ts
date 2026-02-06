@@ -3,6 +3,7 @@
 export const PermissionModules = {
   DASHBOARD: 'dashboard',
   RESTAURANTS: 'restaurants',
+  VIEW_RESTAURANT_DETAILS: 'view_restaurant_details',
   MENU_MANAGEMENT: 'menu_management',
   DISCOUNTS_OFFERS: 'discounts_offers',
   BOOKINGS: 'bookings',
@@ -22,9 +23,10 @@ export const RolePermissions: Record<string, PermissionModule[]> = {
   'Super Admin': [
     PermissionModules.DASHBOARD,
     PermissionModules.RESTAURANTS,
-    PermissionModules.MENU_MANAGEMENT,
-    PermissionModules.DISCOUNTS_OFFERS,
-    PermissionModules.BOOKINGS,
+    // PermissionModules.VIEW_RESTAURANT_DETAILS,
+    // PermissionModules.MENU_MANAGEMENT,
+    // PermissionModules.DISCOUNTS_OFFERS,
+    // PermissionModules.BOOKINGS,
     PermissionModules.ORDERS,
     PermissionModules.CUSTOMERS,
     PermissionModules.REPORTS,

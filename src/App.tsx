@@ -10,7 +10,7 @@ function AppRoutes() {
 function App() {
   return (
     <Suspense fallback={<Loader />}>
-      <Router>
+      <Router basename='/food'>
         <AppRoutes />
       </Router>
     </Suspense>

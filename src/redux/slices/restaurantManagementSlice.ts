@@ -25,6 +25,7 @@ export interface MenuItem {
 export interface RestaurantItem {
   id: number;
   restaurant_name: string;
+  email: string;
   description: string;
   logo: string | null;
   longitude: string;
@@ -50,6 +51,7 @@ interface Pagination {
   pageNumber: number;
   pageSize: number;
 }
+
 interface RestaurantState {
   data: RestaurantItem[];
   pagination: Pagination | null;
@@ -58,6 +60,17 @@ interface RestaurantState {
   message: string | null;
   statusCode: number | null;
   error: string | null;
+  updateLoading: boolean;
+}
+
+export interface UpdateStatusPayload {
+  id: number;
+  status: 'Approved' | 'Rejected';
+  rejection_reason?: string;
+}
+export interface UpdateStatusResponse {
+  status?: number;
+  message?: string;
 }
 
 /* ------------------ INITIAL STATE ------------------ */
@@ -70,6 +83,7 @@ const initialState: RestaurantState = {
   message: null,
   statusCode: null,
   error: null,
+  updateLoading: false,
 };
 
 // Generic API thunk returning full Axios response
@@ -77,7 +91,6 @@ export function createApiThunk<T = any, U = void>(type: string, apiCall: (arg: U
   return createAsyncThunk<T, U>(type, async (arg: U, { rejectWithValue }) => {
     try {
       const response = await apiCall(arg);
-      console.log('response: ', response);
       return response;
     } catch (error: any) {
       const errorMessage = error?.response?.data?.data?.message || error?.response?.data?.data?.error || error?.message || 'Something went wrong';
@@ -87,7 +100,9 @@ export function createApiThunk<T = any, U = void>(type: string, apiCall: (arg: U
   });
 }
 
-// ----------- API THUNK -----------
+// ----------- API THUNKS -----------
+
+// Get all restaurants
 export const getAllRestaurants = createApiThunk(
   'restaurant/getAllRestaurants',
   ({ page_number, page_size, search, status }: { page_number: number; page_size: number; search?: string; status?: string }) =>
@@ -96,8 +111,20 @@ export const getAllRestaurants = createApiThunk(
       page_size,
       ...(search ? { search } : {}),
       ...(status ? { status } : {}),
-    })
+    }),
 );
+
+// Update restaurant status
+export const updateRestaurantStatus = createApiThunk('restaurant/updateStatus', ({ id, status, rejection_reason }: UpdateStatusPayload) => {
+  const payload: any = { status };
+
+  // Only add rejection_reason if status is Rejected
+  if (status === 'Rejected' && rejection_reason) {
+    payload.rejection_reason = rejection_reason;
+  }
+
+  return axiosInstance.patch(`/restaurant-update-status/${id}`, payload);
+});
 
 // Slice
 const restaurantManagementSlice = createSlice({
@@ -138,6 +165,7 @@ const restaurantManagementSlice = createSlice({
       state.statusCode = action.payload?.statusCode || null;
     };
 
+    // Get all restaurants handlers
     [getAllRestaurants].forEach((thunk) => {
       builder.addCase(thunk.pending, handlePending);
       builder.addCase(thunk.fulfilled, handleFulfilled);

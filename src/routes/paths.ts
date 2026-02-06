@@ -2,6 +2,7 @@
 export const PATHS = {
   DASHBOARD: '/dashboard',
   RESTAURANTS: '/restaurants',
+  VIEW_RESTAURANT_DETAILS: '/restaurants/:id',
   MENU: '/menu',
   BOOKINGS: '/bookings',
   DISCOUNTS: '/discounts',

@@ -6,8 +6,9 @@ import Pagination from '../../components/Pagination';
 import Loader from '../../components/Loader';
 import { AppDispatch } from '../../redux/store';
 import { RootState } from '../../redux/rootReducer';
-import { getAllRestaurants, RestaurantItem } from '../../redux/slices/restaurantManagementSlice';
+import { getAllRestaurants, RestaurantItem, updateRestaurantStatus, UpdateStatusResponse } from '../../redux/slices/restaurantManagementSlice';
 import { ActionModal } from '../../components/ActionModal';
+import { useSnackbar } from 'notistack';
 
 // Types
 type RestaurantStatus = 'Approved' | 'Pending' | 'Rejected';
@@ -18,7 +19,6 @@ interface FilterState {
 }
 
 interface ModalState {
-  view: boolean;
   approve: boolean;
   reject: boolean;
 }
@@ -86,7 +86,7 @@ const ActionButtons: React.FC<{
         <Check size={18} />
       </button>
     )}
-    {restaurant.status !== 'Rejected' && (
+    {restaurant.status !== 'Rejected' && restaurant.status !== 'Approved' && (
       <button
         onClick={onReject}
         className='text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-100 transition-all transform hover:scale-110'
@@ -102,6 +102,7 @@ const ActionButtons: React.FC<{
 // Main Component
 const RestaurantsList: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const dispatch = useDispatch<AppDispatch>();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const shouldRestoreFocusRef = useRef(false);
@@ -113,7 +114,7 @@ const RestaurantsList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filters, setFilters] = useState<FilterState>({ search: '', status: 'All' });
-  const [modals, setModals] = useState<ModalState>({ view: false, approve: false, reject: false });
+  const [modals, setModals] = useState<ModalState>({ approve: false, reject: false });
   const [selectedRestaurant, setSelectedRestaurant] = useState<RestaurantItem | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
@@ -164,35 +165,48 @@ const RestaurantsList: React.FC = () => {
   const closeModal = (type: keyof ModalState) => {
     setModals((prev) => ({ ...prev, [type]: false }));
     if (type === 'reject') setRejectionReason('');
-    if (type !== 'view') setSelectedRestaurant(null);
+    setSelectedRestaurant(null);
   };
 
-  const handleApprove = async () => {
+  const handleView = (restaurant: RestaurantItem) => {
+    navigate(`/restaurants/${restaurant.id}`, { state: { restaurant } });
+  };
+
+  const handleStatusUpdate = async (status: 'Approved' | 'Rejected', modalType: keyof ModalState) => {
     if (!selectedRestaurant) return;
-
-    try {
-      // TODO: Dispatch approve action
-      // await dispatch(approveRestaurant(selectedRestaurant.id)).unwrap();
-      await fetchRestaurants();
-      closeModal('approve');
-    } catch (err) {
-      console.error('Failed to approve restaurant:', err);
+    if (status === 'Rejected' && !rejectionReason.trim()) {
+      enqueueSnackbar('Please provide a rejection reason.', {
+        variant: 'error',
+      });
+      return;
     }
-  };
-
-  const handleReject = async () => {
-    if (!selectedRestaurant || !rejectionReason.trim()) return;
 
     try {
-      // TODO: Dispatch reject action
-      // await dispatch(rejectRestaurant({
-      //   id: selectedRestaurant.id,
-      //   reason: rejectionReason
-      // })).unwrap();
-      await fetchRestaurants();
-      closeModal('reject');
-    } catch (err) {
-      console.error('Failed to reject restaurant:', err);
+      const payload: any = {
+        id: selectedRestaurant.id,
+        status,
+      };
+
+      if (status === 'Rejected') {
+        payload.rejection_reason = rejectionReason.trim();
+      }
+
+      const response = (await dispatch(updateRestaurantStatus(payload)).unwrap()) as UpdateStatusResponse;
+
+      if (response?.status === 200) {
+        const isApproved = status === 'Approved';
+
+        enqueueSnackbar(response?.message || `Restaurant "${selectedRestaurant.restaurant_name}" ${isApproved ? 'approved' : 'rejected'} successfully!`, {
+          variant: isApproved ? 'success' : 'error',
+        });
+
+        await fetchRestaurants();
+        closeModal(modalType);
+      }
+    } catch (err: any) {
+      console.error(`Failed to ${status.toLowerCase()} restaurant:`, err);
+
+      enqueueSnackbar(err?.message || `Failed to ${status.toLowerCase()} restaurant`, { variant: 'error' });
     }
   };
 
@@ -201,7 +215,7 @@ const RestaurantsList: React.FC = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8'>
+    <div className='p-4 sm:p-6 lg:p-8'>
       <div className='max-w-full mx-auto'>
         {/* Header */}
         <header className='mb-8'>
@@ -279,7 +293,7 @@ const RestaurantsList: React.FC = () => {
               <thead>
                 <tr className='bg-gradient-to-r from-[#ff4d4d] to-[#ff6b6b] text-white'>
                   <th className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider'>Restaurant</th>
-                  <th className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider'>Description</th>
+                  <th className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider'>Email</th>
                   <th className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider'>Address</th>
                   <th className='px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider'>Status</th>
                   <th className='px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider'>Actions</th>
@@ -293,8 +307,8 @@ const RestaurantsList: React.FC = () => {
                         <div className='font-semibold text-gray-900'>{restaurant.restaurant_name}</div>
                       </td>
                       <td className='px-6 py-4'>
-                        <div className='text-sm text-gray-600 max-w-xs truncate' title={restaurant.description}>
-                          {restaurant.description || '-'}
+                        <div className='text-sm text-gray-600 max-w-xs truncate' title={restaurant.email}>
+                          {restaurant.email || '-'}
                         </div>
                       </td>
                       <td className='px-6 py-4'>
@@ -308,7 +322,7 @@ const RestaurantsList: React.FC = () => {
                       <td className='px-6 py-4'>
                         <ActionButtons
                           restaurant={restaurant}
-                          onView={() => openModal('view', restaurant)}
+                          onView={() => handleView(restaurant)}
                           onApprove={() => openModal('approve', restaurant)}
                           onReject={() => openModal('reject', restaurant)}
                         />
@@ -327,7 +341,6 @@ const RestaurantsList: React.FC = () => {
             </table>
           </div>
 
-          {/* {totalCount > rowsPerPage && ( */}
           <Pagination
             totalItems={totalCount}
             currentPage={currentPage}
@@ -336,7 +349,6 @@ const RestaurantsList: React.FC = () => {
             onPageChange={setCurrentPage}
             onRowsPerPageChange={setRowsPerPage}
           />
-          {/* )} */}
         </div>
 
         {/* Cards - Mobile/Tablet */}
@@ -363,7 +375,7 @@ const RestaurantsList: React.FC = () => {
                   <div className='pt-2 border-t border-gray-200'>
                     <ActionButtons
                       restaurant={restaurant}
-                      onView={() => openModal('view', restaurant)}
+                      onView={() => handleView(restaurant)}
                       onApprove={() => openModal('approve', restaurant)}
                       onReject={() => openModal('reject', restaurant)}
                     />
@@ -393,57 +405,16 @@ const RestaurantsList: React.FC = () => {
         </div>
       </div>
 
-      {/* View Modal */}
-      {modals.view && selectedRestaurant && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm'>
-          <div className='bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto'>
-            <div className='bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl sticky top-0 z-10'>
-              <h2 className='text-2xl font-bold'>Restaurant Details</h2>
-            </div>
-            <div className='p-6 space-y-4'>
-              <DetailField label='Restaurant Name' value={selectedRestaurant.restaurant_name} />
-              <DetailField label='Description' value={selectedRestaurant.description} />
-              <DetailField label='Address' value={selectedRestaurant.address} />
-
-              <div className='bg-gray-50 p-4 rounded-lg'>
-                <span className='font-semibold text-gray-700 block mb-2'>Status</span>
-                <StatusBadge status={selectedRestaurant.status as RestaurantStatus} rejectionReason={selectedRestaurant.rejection_reason} />
-              </div>
-
-              {selectedRestaurant.rejection_reason && (
-                <div className='bg-red-50 p-4 rounded-lg border border-red-200'>
-                  <span className='font-semibold text-red-700 block mb-1'>Rejection Reason</span>
-                  <span className='text-red-900'>{selectedRestaurant.rejection_reason}</span>
-                </div>
-              )}
-
-              {selectedRestaurant.menu_items && selectedRestaurant.menu_items.length > 0 && (
-                <div className='bg-gray-50 p-4 rounded-lg'>
-                  <span className='font-semibold text-gray-700 block mb-3'>Menu Items</span>
-                  <div className='space-y-2'>
-                    {selectedRestaurant.menu_items.map((item) => (
-                      <div key={item.id} className='flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200'>
-                        <span className='text-gray-900'>{item.item_name}</span>
-                        <span className='font-semibold text-blue-600'>₹{item.price}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className='flex justify-end gap-3 pt-4 border-t'>
-                <button onClick={() => closeModal('view')} className='px-6 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all font-medium'>
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Approve Modal */}
       {modals.approve && selectedRestaurant && (
-        <ActionModal type='approve' restaurant={selectedRestaurant} rejectionReason='' onReasonChange={() => {}} onCancel={() => closeModal('approve')} onConfirm={handleApprove} />
+        <ActionModal
+          type='approve'
+          restaurant={selectedRestaurant}
+          rejectionReason=''
+          onReasonChange={() => {}}
+          onCancel={() => closeModal('approve')}
+          onConfirm={() => handleStatusUpdate('Approved', 'approve')}
+        />
       )}
 
       {/* Reject Modal */}
@@ -454,19 +425,11 @@ const RestaurantsList: React.FC = () => {
           rejectionReason={rejectionReason}
           onReasonChange={setRejectionReason}
           onCancel={() => closeModal('reject')}
-          onConfirm={handleReject}
+          onConfirm={() => handleStatusUpdate('Rejected', 'reject')}
         />
       )}
     </div>
   );
 };
-
-// Helper Components
-const DetailField: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className='bg-gray-50 p-4 rounded-lg'>
-    <span className='font-semibold text-gray-700 block mb-1'>{label}</span>
-    <span className='text-gray-900'>{value}</span>
-  </div>
-);
 
 export default RestaurantsList;

@@ -24,12 +24,13 @@ const validationSchema = Yup.object({
 });
 
 const RestaurantInformationStep = forwardRef<any, RestaurantInfoProps>(({ initialData, email }, ref) => {
+  console.log('initialData: ', initialData);
   const formik = useFormik({
     initialValues: {
       full_name: '',
       restaurant_name: '',
       address: '',
-      email: '',
+      email: email || '',
       phone_number: '',
       // whatsappSame: true,
       // whatsappNumber: '',

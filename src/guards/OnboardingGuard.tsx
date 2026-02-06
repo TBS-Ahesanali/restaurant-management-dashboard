@@ -11,7 +11,7 @@ interface OnboardingGuardProps {
 }
 
 const OnboardingGuard = ({ children }: OnboardingGuardProps) => {
-  const { restaurant, isRestaurantLoaded, isAuthenticated } = useAuth();
+  const { restaurant, isAuthenticated } = useAuth();
   const location = useLocation();
   const accessToken = location.state?.token || localStorage.getItem('accessToken');
 
@@ -21,13 +21,12 @@ const OnboardingGuard = ({ children }: OnboardingGuardProps) => {
   }
 
   // If restaurant data is not loaded yet, show loader
-  if (!isRestaurantLoaded) {
-    return <Loader />;
-  }
+  // if (!isRestaurantLoaded) {
+  //   return <Loader />;
+  // }
 
   // Check restaurant status and redirect accordingly
   if (restaurant) {
-    console.log('restaurant: ', restaurant);
     const status = restaurant.status;
 
     console.log('OnboardingGuard - Restaurant Status:', status);

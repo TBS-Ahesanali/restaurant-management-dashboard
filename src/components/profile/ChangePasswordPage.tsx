@@ -40,28 +40,21 @@ const ChangePasswordPage = () => {
             old_password: values.old_password,
             new_password: values.new_password,
             confirm_password: values.confirm_password,
-          })
+          }),
         );
 
-        console.log('response: ', response);
-        if (response) {
-          if (response.status === 200) {
-            enqueueSnackbar(response.message || 'Password changed successfully', {
-              variant: 'success',
-            });
-            resetForm();
-            navigate(PATHS.DASHBOARD);
-          } else if (response.status === 403) {
-            enqueueSnackbar(response.message || 'Incorrect current password', {
-              variant: 'error',
-            });
-          } else {
-            enqueueSnackbar(response.message || 'Failed to change password', {
-              variant: 'error',
-            });
-          }
+        if (response?.status === 200) {
+          enqueueSnackbar(response.message || 'Password changed successfully', {
+            variant: 'success',
+          });
+          resetForm();
+          navigate(PATHS.DASHBOARD);
+        } else {
+          enqueueSnackbar(response?.message || 'Failed to change password', {
+            variant: 'error',
+          });
         }
-      } catch (error) {
+      } catch {
         enqueueSnackbar('An unexpected error occurred', {
           variant: 'error',
         });
@@ -71,107 +64,96 @@ const ChangePasswordPage = () => {
     },
   });
 
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    switch (field) {
-      case 'current':
-        setShowCurrent((prev) => !prev);
-        break;
-      case 'new':
-        setShowNew((prev) => !prev);
-        break;
-      case 'confirm':
-        setShowConfirm((prev) => !prev);
-        break;
-    }
-  };
-
   return (
-    <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='max-w-md mx-auto bg-white rounded-lg shadow-md p-8'>
-        <div className='mb-8'>
-          <div className='flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-4'>
-            <Lock className='w-6 h-6 text-blue-600' />
+    <div className='p-6'>
+      <div className='max-w-xl mx-auto'>
+        {/* CARD */}
+        <div className='bg-white border border-gray-200 rounded-2xl p-6'>
+          {/* HEADER */}
+          <div className='flex items-center gap-3 mb-6'>
+            <div className='w-12 h-12 rounded-xl bg-[#ff4d4d]/10 text-[#ff4d4d] flex items-center justify-center'>
+              <Lock size={22} />
+            </div>
+            <div>
+              <h2 className='text-lg font-semibold text-gray-900'>Change Password</h2>
+              <p className='text-sm text-gray-500'>Update your account password</p>
+            </div>
           </div>
-          <h2 className='text-2xl font-bold text-gray-900 text-center'>Change Password</h2>
-          <p className='mt-2 text-sm text-gray-600 text-center'>Ensure your account is using a strong password to stay secure</p>
+
+          {/* FORM */}
+          <form onSubmit={formik.handleSubmit} className='space-y-5'>
+            {/* Current Password */}
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>Current Password</label>
+              <div className='relative'>
+                <input
+                  type={showCurrent ? 'text' : 'password'}
+                  name='old_password'
+                  value={formik.values.old_password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`w-full rounded-lg border px-3 py-2 pr-10 focus:ring-2 focus:ring-[#ff4d4d]
+                    ${formik.touched.old_password && formik.errors.old_password ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                <button type='button' onClick={() => setShowCurrent(!showCurrent)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
+                  {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {formik.touched.old_password && formik.errors.old_password && <p className='text-xs text-red-600 mt-1'>{formik.errors.old_password}</p>}
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>New Password</label>
+              <div className='relative'>
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  name='new_password'
+                  value={formik.values.new_password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`w-full rounded-lg border px-3 py-2 pr-10 focus:ring-2 focus:ring-[#ff4d4d]
+                    ${formik.touched.new_password && formik.errors.new_password ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                <button type='button' onClick={() => setShowNew(!showNew)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
+                  {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {formik.touched.new_password && formik.errors.new_password && <p className='text-xs text-red-600 mt-1'>{formik.errors.new_password}</p>}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>Confirm New Password</label>
+              <div className='relative'>
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  name='confirm_password'
+                  value={formik.values.confirm_password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={`w-full rounded-lg border px-3 py-2 pr-10 focus:ring-2 focus:ring-[#ff4d4d]
+                    ${formik.touched.confirm_password && formik.errors.confirm_password ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                <button type='button' onClick={() => setShowConfirm(!showConfirm)} className='absolute inset-y-0 right-3 flex items-center text-gray-400'>
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {formik.touched.confirm_password && formik.errors.confirm_password && <p className='text-xs text-red-600 mt-1'>{formik.errors.confirm_password}</p>}
+            </div>
+
+            {/* ACTION */}
+            <div className='pt-4 border-t flex justify-end'>
+              <button
+                type='submit'
+                disabled={formik.isSubmitting || !formik.isValid}
+                className='bg-[#ff4d4d] hover:bg-[#ff3333] text-white px-6 py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed'
+              >
+                {formik.isSubmitting ? 'Changing Password...' : 'Save Password'}
+              </button>
+            </div>
+          </form>
         </div>
-
-        <form onSubmit={formik.handleSubmit} className='space-y-6'>
-          {/* Current Password */}
-          <div>
-            <label htmlFor='old_password' className='block text-sm font-medium text-gray-700 mb-2'>
-              Current Password
-            </label>
-            <div className='relative'>
-              <input
-                id='old_password'
-                name='old_password'
-                type={showCurrent ? 'text' : 'password'}
-                value={formik.values.old_password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className='block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-              />
-              <button type='button' onClick={() => togglePasswordVisibility('current')} className='absolute inset-y-0 right-0 pr-3 flex items-center'>
-                {showCurrent ? <EyeOff className='h-5 w-5 text-gray-400' /> : <Eye className='h-5 w-5 text-gray-400' />}
-              </button>
-            </div>
-            {formik.touched.old_password && formik.errors.old_password && <p className='mt-2 text-sm text-red-600'>{formik.errors.old_password}</p>}
-          </div>
-
-          {/* New Password */}
-          <div>
-            <label htmlFor='new_password' className='block text-sm font-medium text-gray-700 mb-2'>
-              New Password
-            </label>
-            <div className='relative'>
-              <input
-                id='new_password'
-                name='new_password'
-                type={showNew ? 'text' : 'password'}
-                value={formik.values.new_password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className='block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-              />
-              <button type='button' onClick={() => togglePasswordVisibility('new')} className='absolute inset-y-0 right-0 pr-3 flex items-center'>
-                {showNew ? <EyeOff className='h-5 w-5 text-gray-400' /> : <Eye className='h-5 w-5 text-gray-400' />}
-              </button>
-            </div>
-            {formik.touched.new_password && formik.errors.new_password && <p className='mt-2 text-sm text-red-600'>{formik.errors.new_password}</p>}
-          </div>
-
-          {/* Confirm New Password */}
-          <div>
-            <label htmlFor='confirm_password' className='block text-sm font-medium text-gray-700 mb-2'>
-              Confirm New Password
-            </label>
-            <div className='relative'>
-              <input
-                id='confirm_password'
-                name='confirm_password'
-                type={showConfirm ? 'text' : 'password'}
-                value={formik.values.confirm_password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className='block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-              />
-              <button type='button' onClick={() => togglePasswordVisibility('confirm')} className='absolute inset-y-0 right-0 pr-3 flex items-center'>
-                {showConfirm ? <EyeOff className='h-5 w-5 text-gray-400' /> : <Eye className='h-5 w-5 text-gray-400' />}
-              </button>
-            </div>
-            {formik.touched.confirm_password && formik.errors.confirm_password && <p className='mt-2 text-sm text-red-600'>{formik.errors.confirm_password}</p>}
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type='submit'
-            disabled={formik.isSubmitting || !formik.isValid}
-            className='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed'
-          >
-            {formik.isSubmitting ? 'Changing Password...' : 'Change Password'}
-          </button>
-        </form>
       </div>
     </div>
   );
