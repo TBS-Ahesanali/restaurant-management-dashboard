@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, FileText, Clock, Check, X, AlertCircle, UtensilsCrossed, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Check, X, AlertCircle, UtensilsCrossed, Mail } from 'lucide-react';
 import { RestaurantItem } from '../../redux/slices/restaurantManagementSlice';
 
 type RestaurantStatus = 'Approved' | 'Pending' | 'Rejected';
@@ -134,14 +134,14 @@ const ViewRestaurantDetails: React.FC = () => {
         </div>
 
         {/* Info Card */}
-        <div className='mt-6 bg-white rounded-lg border border-blue-200 p-4 shadow-sm'>
+        {/* <div className='mt-6 bg-white rounded-lg border border-blue-200 p-4 shadow-sm'>
           <div className='flex items-start gap-3'>
             <AlertCircle className='w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0' />
             <p className='text-sm text-gray-700'>
               <strong className='text-gray-900'>Note:</strong> This is a read-only view of the restaurant details. For any modifications, please contact the administrator.
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

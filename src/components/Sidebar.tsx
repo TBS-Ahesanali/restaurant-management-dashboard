@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, Utensils, Tags, CalendarRange, ShoppingCart, Users, BarChart3, Bell, Settings, X } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, Utensils, Tags, CalendarRange, ShoppingCart, Users, BarChart3, Bell, Settings, X, Palette } from 'lucide-react';
 import { PATHS } from '../routes/paths';
 import LOGO from '../assets/icons/Logo.svg';
 import useAuth from '../hooks/useAuth';

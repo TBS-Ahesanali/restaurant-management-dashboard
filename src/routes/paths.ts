@@ -8,6 +8,7 @@ export const PATHS = {
   DISCOUNTS: '/discounts',
   ORDERS: '/orders',
   CUSTOMERS: '/customers',
+  VIEW_CUSTOMER_DETAILS: '/customers/:id',
   REPORTS: '/reports',
   NOTIFICATIONS: '/notifications',
   SETTINGS: '/settings',

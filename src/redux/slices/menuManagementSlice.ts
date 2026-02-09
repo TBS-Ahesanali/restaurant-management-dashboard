@@ -211,7 +211,7 @@ export const updateMenuItem = createApiThunk('menuManagement/updateMenuItem', (p
   }),
 );
 
-export const deleteMenuItem = createApiThunk('menuManagement/deleteMenuItem', (id: number) => axiosInstance.delete(`/menu/${id}/`));
+export const deleteMenuItem = createApiThunk('menuManagement/deleteMenuItem', (id: number) => axiosInstance.delete(`/menu/${id}`));
 
 /* ===================== VARIATION GROUP THUNKS ===================== */
 

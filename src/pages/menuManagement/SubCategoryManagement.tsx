@@ -190,11 +190,17 @@ const SubCategoryManagement: React.FC = () => {
                     )}
                   </td>
                   <td>
-                    <div className='flex justify-center gap-2'>
-                      <button className='text-blue-600 hover:text-blue-800 transition-colors' onClick={() => handleOpenModal(subCat)}>
+                    <div className='flex justify-center gap-3'>
+                      <button
+                        className='w-9 h-9 rounded-md bg-[#ff4d4d]/10 flex items-center justify-center text-[#ff4d4d] hover:bg-[#ff4d4d]/20 transition'
+                        onClick={() => handleOpenModal(subCat)}
+                      >
                         <Edit2 size={16} />
                       </button>
-                      <button className='text-red-600 hover:text-red-800 transition-colors' onClick={() => handleDeleteSubCategory(subCat.id)}>
+                      <button
+                        className='w-9 h-9 rounded-md bg-red-50 flex items-center justify-center text-red-600 hover:bg-red-100 transition'
+                        onClick={() => handleDeleteSubCategory(subCat.id)}
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>

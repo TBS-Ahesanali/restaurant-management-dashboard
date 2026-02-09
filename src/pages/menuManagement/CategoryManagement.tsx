@@ -145,11 +145,18 @@ const CategoryManagement: React.FC = () => {
               <h6 className='font-semibold text-gray-900'>{cat.name}</h6>
               <small className='text-sm'>{cat.is_active ? <span className='text-green-600'>Active</span> : <span className='text-red-600'>Inactive</span>}</small>
             </div>
-            <div className='flex gap-2'>
-              <button className='text-blue-600 hover:text-blue-800 transition-colors' onClick={() => handleOpenModal(cat)}>
+
+            <div className='flex justify-center gap-3'>
+              <button
+                className='w-9 h-9 rounded-md bg-[#ff4d4d]/10 flex items-center justify-center text-[#ff4d4d] hover:bg-[#ff4d4d]/20 transition'
+                onClick={() => handleOpenModal(cat)}
+              >
                 <Edit2 size={16} />
               </button>
-              <button className='text-red-600 hover:text-red-800 transition-colors' onClick={() => handleDeleteCategory(cat.id)}>
+              <button
+                className='w-9 h-9 rounded-md bg-red-50 flex items-center justify-center text-red-600 hover:bg-red-100 transition'
+                onClick={() => handleDeleteCategory(cat.id)}
+              >
                 <Trash2 size={16} />
               </button>
             </div>

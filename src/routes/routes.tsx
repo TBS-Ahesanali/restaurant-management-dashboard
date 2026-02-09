@@ -13,10 +13,12 @@ import AdminLayout from '../layouts/Admin';
 import UnauthLayout from '../layouts/UnauthLayout';
 import Loader from '../components/Loader';
 import ViewRestaurantDetails from '../pages/restaurants/ViewRestaurantDetails';
+import ViewCustomerDetails from '../pages/customers/Viewcustomerdetails';
 
 // Lazy load components
 const Dashboard = lazy(() => import('../components/Dashboard'));
 const RestaurantsList = lazy(() => import('../pages/restaurants/RestaurantsList'));
+const CustomersList = lazy(() => import('../pages/customers/Customerslist'));
 const MenuManagement = lazy(() => import('../pages/menuManagement'));
 const BookingsPage = lazy(() => import('../components/bookings/BookingsPage'));
 const DiscountsPage = lazy(() => import('../components/discounts/DiscountsPage'));
@@ -75,6 +77,22 @@ const routes: RouteObject[] = [
         ),
       },
       {
+        path: PATHS.CUSTOMERS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.CUSTOMERS}>
+            <CustomersList />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.VIEW_CUSTOMER_DETAILS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.CUSTOMERS}>
+            <ViewCustomerDetails />
+          </PermissionGuard>
+        ),
+      },
+      {
         path: PATHS.MENU,
         element: (
           <PermissionGuard requiredPermission={PermissionModules.MENU_MANAGEMENT}>
@@ -103,14 +121,6 @@ const routes: RouteObject[] = [
         element: (
           <PermissionGuard requiredPermission={PermissionModules.ORDERS}>
             <OrdersPage />
-          </PermissionGuard>
-        ),
-      },
-      {
-        path: '/customers',
-        element: (
-          <PermissionGuard requiredPermission={PermissionModules.CUSTOMERS}>
-            <div>Customers Page (To be created)</div>
           </PermissionGuard>
         ),
       },

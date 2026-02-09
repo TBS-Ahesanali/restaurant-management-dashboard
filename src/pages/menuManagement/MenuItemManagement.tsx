@@ -102,6 +102,10 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
   const [assignedModifierGroups, setAssignedModifierGroups] = useState<number[]>([]);
 
   // Predefined tag suggestions
+  // Delete Confirmation Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+
   const suggestedTags = ['veg preparation', 'imported beef', 'imported buff', 'gluten-free', 'dairy-free', 'spicy', 'chef special', 'organic'];
 
   /* ================= FORMIK ================= */
@@ -109,7 +113,7 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
   const menuItemFormik = useFormik({
     initialValues: {
       item_name: '',
-      image: '',
+      // image: '',
       description: '',
       category: 0,
       food_type: 'veg',
@@ -130,7 +134,7 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
           menu_item: {
             item_name: values.item_name.trim(),
             description: values.description.trim(),
-            image: values.image,
+            // image: values.image,
             category: values.category,
             food_type: foodTypeMap[values.food_type],
             gst: values.tax_rate,
@@ -392,7 +396,7 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
 
           menuItemFormik.setValues({
             item_name: menuData.item_name || '',
-            image: menuData.image || '',
+            // image: menuData.image || '',
             description: menuData.description || '',
             category: menuData.category || 0,
             food_type: foodTypeMap[menuData.is_food_type] || 'veg',
@@ -515,15 +519,21 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
 
   /* ================= HANDLERS ================= */
 
-  const handleDeleteMenuItem = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this menu item?')) {
-      try {
-        await dispatch(deleteMenuItem(id)).unwrap();
-        dispatch(getMenuItems());
-      } catch (err: any) {
-        console.error('Failed to delete menu item:', err);
-      }
+  const handleDeleteMenuItem = async () => {
+    if (!itemToDelete) return;
+    try {
+      await dispatch(deleteMenuItem(itemToDelete.id)).unwrap();
+      dispatch(getMenuItems());
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    } catch (err: any) {
+      console.error('Failed to delete menu item:', err);
     }
+  };
+
+  const openDeleteModal = (item: MenuItem) => {
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
   };
 
   const handleOpenModal = (menuItem: MenuItem | null = null) => {
@@ -730,11 +740,17 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                     )}
                   </td>
                   <td className='text-center'>
-                    <div className='flex gap-2 justify-center'>
-                      <button className='text-blue-600 hover:text-blue-800 transition-colors' onClick={() => handleOpenModal(item)}>
+                    <div className='flex justify-center gap-3'>
+                      <button
+                        className='w-9 h-9 rounded-md bg-[#ff4d4d]/10 flex items-center justify-center text-[#ff4d4d] hover:bg-[#ff4d4d]/20 transition'
+                        onClick={() => handleOpenModal(item)}
+                      >
                         <Edit2 size={16} />
                       </button>
-                      <button className='text-red-600 hover:text-red-800 transition-colors' onClick={() => handleDeleteMenuItem(item.id)}>
+                      <button
+                        className='w-9 h-9 rounded-md bg-red-50 flex items-center justify-center text-red-600 hover:bg-red-100 transition'
+                        onClick={() => openDeleteModal(item)}
+                      >
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -807,7 +823,7 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         <HelpCircle size={14} className='text-gray-400' />
                       </label>
                       <input
-                        name='name'
+                        name='item_name'
                         value={menuItemFormik.values.item_name}
                         onChange={menuItemFormik.handleChange}
                         onBlur={menuItemFormik.handleBlur}
@@ -1747,6 +1763,37 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
           </div>
         </form>
       </ModalComponent>
+
+      {/* ================= DELETE CONFIRMATION MODAL ================= */}
+      {isDeleteModalOpen && itemToDelete && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm'>
+          <div className='bg-white rounded-2xl shadow-2xl max-w-md w-full animate-fade-in'>
+            <div className='p-6'>
+              <div className='flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4'>
+                <Trash2 className='text-red-600' size={32} />
+              </div>
+              <h2 className='text-2xl font-bold text-center mb-4 text-gray-900'>Delete Menu Item</h2>
+              <p className='text-gray-600 text-center mb-6'>
+                Are you sure you want to delete <span className='font-semibold'>{itemToDelete.item_name}</span>? This action cannot be undone.
+              </p>
+              <div className='flex gap-3'>
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setItemToDelete(null);
+                  }}
+                  className='flex-1 px-4 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-all font-medium'
+                >
+                  Cancel
+                </button>
+                <button onClick={handleDeleteMenuItem} className='flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium shadow-lg'>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

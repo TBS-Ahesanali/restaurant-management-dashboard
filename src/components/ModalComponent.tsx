@@ -57,7 +57,7 @@ const ModalComponent: React.FC<ModalComponentProps> = ({ id, title, size = 'md',
           ${isActive ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'}
         `}
       >
-        <div className='bg-white rounded-2xl shadow-2xl rounded-2xl overflow-hidden'>
+        <div className='bg-white rounded-2xl shadow-2xl overflow-hidden'>
           {/* HEADER */}
           <div className='flex items-center justify-between px-6 py-4 border-b'>
             <h3 className='text-xl font-semibold'>{title}</h3>
