@@ -226,7 +226,6 @@ const RestaurantsList: React.FC = () => {
         {/* Filters */}
         <div className='bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-gray-100'>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4 items-center'>
-            {/* 🔍 Search (2/3 width) */}
             <div className='relative md:col-span-2'>
               <Search className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' size={20} />
               <input
@@ -248,7 +247,6 @@ const RestaurantsList: React.FC = () => {
               />
             </div>
 
-            {/* 🏷 Status Filter (1/3 width) */}
             <div className='relative md:col-span-1'>
               <Filter className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' size={20} />
               <select
