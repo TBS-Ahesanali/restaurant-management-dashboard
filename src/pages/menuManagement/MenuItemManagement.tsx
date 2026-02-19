@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit2, Trash2, Plus, HelpCircle, Upload, X } from 'lucide-react';
+import { Edit2, Trash2, Plus, HelpCircle, Upload, X, UtensilsCrossed } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
@@ -9,6 +9,7 @@ import {
   addMenuItem,
   clearMenuManagementState,
   deleteMenuItem,
+  deleteMenuItemImage,
   getAllSubCategories,
   getCategories,
   getMenuItems,
@@ -69,10 +70,14 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
   const [editMenuItem, setEditMenuItem] = useState<MenuItem | null>(null);
   console.log('editMenuItem: ', editMenuItem);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Multiple image state
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<any[]>([]); // for edit mode
   const [tagInput, setTagInput] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isImageDeleteModalOpen, setIsImageDeleteModalOpen] = useState(false);
+  const [imageToDeleteId, setImageToDeleteId] = useState<number | null>(null);
 
   // Active tab in the modal
   const [activeTab, setActiveTab] = useState<'basic' | 'variations' | 'addons' | 'modifiers'>('basic');
@@ -113,7 +118,6 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
   const menuItemFormik = useFormik({
     initialValues: {
       item_name: '',
-      // image: '',
       description: '',
       category: 0,
       food_type: 'veg',
@@ -122,40 +126,49 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
     validationSchema: menuItemValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        // Map food_type string to number as per API requirement
         const foodTypeMap: { [key: string]: number } = {
           veg: 1,
           'non-veg': 2,
           egg: 3,
         };
 
-        // Prepare payload according to API structure
-        const payload: any = {
-          menu_item: {
-            item_name: values.item_name.trim(),
-            description: values.description.trim(),
-            // image: values.image,
-            category: values.category,
-            food_type: foodTypeMap[values.food_type],
-            gst: values.tax_rate,
-          },
-          variant_groups: assignedVariationGroups.map((id) => ({ id })),
-          addon_groups: assignedAddonGroups.map((id) => ({ id })),
-          modifier_groups: assignedModifierGroups.map((id) => ({ id })),
+        // Build FormData
+        const formData = new FormData();
+
+        // Nested JSON fields as stringified (backend expects JSON string for nested objects)
+        const menuItemData = {
+          item_name: values.item_name.trim(),
+          description: values.description.trim(),
+          category: values.category,
+          food_type: foodTypeMap[values.food_type],
+          gst: values.tax_rate,
         };
-        console.log(payload, 'payload');
+        formData.append('menu_item', JSON.stringify(menuItemData));
+        formData.append('variant_groups', JSON.stringify(assignedVariationGroups.map((id) => ({ id }))));
+        formData.append('addon_groups', JSON.stringify(assignedAddonGroups.map((id) => ({ id }))));
+        formData.append('modifier_groups', JSON.stringify(assignedModifierGroups.map((id) => ({ id }))));
+
+        // Append each image file
+        imageFiles.forEach((file) => {
+          formData.append('images', file);
+        });
+
+        console.log('FormData entries:');
+        for (const [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
+
         if (editMenuItem) {
-          // For update
-          await dispatch(updateMenuItem({ id: editMenuItem.id, data: payload })).unwrap();
+          await dispatch(updateMenuItem({ id: editMenuItem.id, data: formData })).unwrap();
         } else {
-          // For create
-          await dispatch(addMenuItem(payload)).unwrap();
+          await dispatch(addMenuItem(formData)).unwrap();
         }
 
         resetForm();
         setEditMenuItem(null);
-        setImageFile(null);
-        setImagePreview(null);
+        setImageFiles([]);
+        setImagePreviews([]);
+        setExistingImages([]);
         setSelectedTags([]);
         setAssignedVariationGroups([]);
         setAssignedAddonGroups([]);
@@ -368,17 +381,6 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
 
   /* ================= EFFECTS ================= */
 
-  useEffect(() => {
-    dispatch(getCategories());
-    dispatch(getAllSubCategories());
-    dispatch(getMenuItems());
-    dispatch(getVariationGroups());
-    dispatch(getVariations());
-    dispatch(getAddonGroups());
-    dispatch(getAddons());
-    dispatch(getModifierGroups());
-    dispatch(getModifiers());
-  }, [dispatch, restaurantId]);
 
   useEffect(() => {
     if (editMenuItem?.id) {
@@ -396,7 +398,6 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
 
           menuItemFormik.setValues({
             item_name: menuData.item_name || '',
-            // image: menuData.image || '',
             description: menuData.description || '',
             category: menuData.category || 0,
             food_type: foodTypeMap[menuData.is_food_type] || 'veg',
@@ -421,21 +422,24 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
             setAssignedModifierGroups(modifierGroupIds);
           }
 
-          // Handle images if available
-          if (menuData.images && Array.isArray(menuData.images) && menuData.images.length > 0) {
-            setImagePreview(menuData.images[0].image);
+          // Load all existing images for edit mode
+          if (menuData.images && Array.isArray(menuData.images)) {
+            setExistingImages(menuData.images);
           }
         }
       });
     } else if (!editMenuItem) {
       menuItemFormik.resetForm();
-      setImagePreview(null);
+      setImageFiles([]);
+      setImagePreviews([]);
+      setExistingImages([]);
       setSelectedTags([]);
       setAssignedVariationGroups([]);
       setAssignedAddonGroups([]);
       setAssignedModifierGroups([]);
     }
   }, [editMenuItem?.id]);
+
 
   useEffect(() => {
     if (editVariationGroup) {
@@ -546,8 +550,9 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
     menuItemFormik.resetForm();
     setIsModalOpen(false);
     setEditMenuItem(null);
-    setImageFile(null);
-    setImagePreview(null);
+    setImageFiles([]);
+    setImagePreviews([]);
+    setExistingImages([]);
     setSelectedTags([]);
     setTagInput('');
     setAssignedVariationGroups([]);
@@ -557,29 +562,46 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
+    const files = Array.from(e.target.files || []);
+    const MAX_IMAGES = 5;
+    const remaining = MAX_IMAGES - imageFiles.length;
+    const validFiles = files
+      .filter((f) => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024)
+      .slice(0, remaining);
 
-      if (!file.type.startsWith('image/')) {
-        return;
-      }
+    if (validFiles.length === 0) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        return;
-      }
+    const newPreviews = validFiles.map((f) => URL.createObjectURL(f));
+    setImageFiles((prev) => [...prev, ...validFiles]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
+    // reset input so same file can be re-selected
+    e.target.value = '';
+  };
 
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteExistingImage = (imageId: number) => {
+    setImageToDeleteId(imageId);
+    setIsImageDeleteModalOpen(true);
+  };
+
+  const confirmDeleteImage = async () => {
+    if (imageToDeleteId === null) return;
+    try {
+      await dispatch(deleteMenuItemImage(imageToDeleteId)).unwrap();
+      setExistingImages((prev) => prev.filter((img) => img.id !== imageToDeleteId));
+      setIsImageDeleteModalOpen(false);
+      setImageToDeleteId(null);
+    } catch (err: any) {
+      console.error('Failed to delete image:', err);
+      setIsImageDeleteModalOpen(false);
+      setImageToDeleteId(null);
     }
   };
 
-  const handleAddTag = (tag: string) => {
-    const trimmedTag = tag.trim().toLowerCase();
-    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
-      setSelectedTags([...selectedTags, trimmedTag]);
-      setTagInput('');
-    }
-  };
 
   const handleRemoveTag = (tagToRemove: string) => {
     const updatedTags = selectedTags.filter((tag) => tag !== tagToRemove);
@@ -689,8 +711,6 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
         </button>
       </div>
 
-      {isLoading && <div className='text-center py-4'>Loading menu items...</div>}
-
       <div className='table-responsive'>
         <table className='table table-hover align-middle mb-0'>
           <thead className='bg-gray-50'>
@@ -704,10 +724,37 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
             </tr>
           </thead>
           <tbody>
-            {menuItems.length === 0 && !isLoading ? (
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i}>
+                  <td>
+                    <div className='d-flex align-items-center gap-3'>
+                      <div className='w-12 h-12 bg-gray-200 rounded-lg animate-pulse'></div>
+                      <div className='h-4 bg-gray-200 rounded w-28 animate-pulse'></div>
+                    </div>
+                  </td>
+                  <td><div className='h-4 bg-gray-200 rounded w-40 animate-pulse'></div></td>
+                  <td><div className='h-4 bg-gray-200 rounded w-16 animate-pulse'></div></td>
+                  <td><div className='h-5 bg-gray-200 rounded-full w-20 animate-pulse'></div></td>
+                  <td><div className='h-5 bg-gray-100 rounded-full w-20 animate-pulse'></div></td>
+                  <td>
+                    <div className='flex justify-center gap-3'>
+                      <div className='w-9 h-9 bg-gray-100 rounded-md animate-pulse'></div>
+                      <div className='w-9 h-9 bg-gray-100 rounded-md animate-pulse'></div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : menuItems.length === 0 ? (
               <tr>
-                <td colSpan={4} className='text-center py-6 text-gray-500'>
-                  No menu items found. Add your first menu item!
+                <td colSpan={6}>
+                  <div className='flex flex-col items-center justify-center py-14 text-center'>
+                    <div className='w-20 h-20 bg-[#ff4d4d]/10 rounded-full flex items-center justify-center mb-4'>
+                      <UtensilsCrossed size={36} className='text-[#ff4d4d]' />
+                    </div>
+                    <h3 className='text-lg font-semibold text-gray-800 mb-1'>No Menu Items Yet</h3>
+                    <p className='text-gray-500 text-sm mb-5'>Get started by adding your first menu item.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -770,17 +817,15 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
             <nav className='flex gap-8'>
               <button
                 onClick={() => setActiveTab('basic')}
-                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'basic' ? 'border-[#ff4d4d] text-[#ff4d4d]' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'basic' ? 'border-[#ff4d4d] text-[#ff4d4d]' : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Basic Details
               </button>
               <button
                 onClick={() => setActiveTab('variations')}
-                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'variations' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'variations' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Variations
                 {assignedVariationGroups.length > 0 && (
@@ -789,18 +834,16 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
               </button>
               <button
                 onClick={() => setActiveTab('addons')}
-                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'addons' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'addons' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Add-ons
                 {assignedAddonGroups.length > 0 && <span className='ml-2 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs'>{assignedAddonGroups.length}</span>}
               </button>
               <button
                 onClick={() => setActiveTab('modifiers')}
-                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'modifiers' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'modifiers' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Modifiers
                 {assignedModifierGroups.length > 0 && <span className='ml-2 bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full text-xs'>{assignedModifierGroups.length}</span>}
@@ -827,9 +870,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         value={menuItemFormik.values.item_name}
                         onChange={menuItemFormik.handleChange}
                         onBlur={menuItemFormik.handleBlur}
-                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${
-                          menuItemFormik.touched.item_name && menuItemFormik.errors.item_name ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${menuItemFormik.touched.item_name && menuItemFormik.errors.item_name ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         placeholder='Margherita Pizza'
                         maxLength={100}
                       />
@@ -849,9 +891,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         value={menuItemFormik.values.description}
                         onChange={menuItemFormik.handleChange}
                         onBlur={menuItemFormik.handleBlur}
-                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${
-                          menuItemFormik.touched.description && menuItemFormik.errors.description ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${menuItemFormik.touched.description && menuItemFormik.errors.description ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         rows={3}
                         placeholder='Margherita pizza for 2'
                         maxLength={500}
@@ -872,9 +913,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         <button
                           type='button'
                           onClick={() => menuItemFormik.setFieldValue('food_type', 'veg')}
-                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                            menuItemFormik.values.food_type === 'veg' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-300'
-                          }`}
+                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${menuItemFormik.values.food_type === 'veg' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-300'
+                            }`}
                         >
                           <div className='flex items-center justify-center gap-2'>
                             <div className='w-4 h-4 border-2 border-green-600 rounded-sm flex items-center justify-center'>
@@ -886,9 +926,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         <button
                           type='button'
                           onClick={() => menuItemFormik.setFieldValue('food_type', 'non-veg')}
-                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                            menuItemFormik.values.food_type === 'non-veg' ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-red-300'
-                          }`}
+                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${menuItemFormik.values.food_type === 'non-veg' ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-red-300'
+                            }`}
                         >
                           <div className='flex items-center justify-center gap-2'>
                             <div className='w-4 h-4 border-2 border-red-600 rounded-sm flex items-center justify-center'>
@@ -900,9 +939,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         <button
                           type='button'
                           onClick={() => menuItemFormik.setFieldValue('food_type', 'egg')}
-                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                            menuItemFormik.values.food_type === 'egg' ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-orange-300'
-                          }`}
+                          className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${menuItemFormik.values.food_type === 'egg' ? 'border-orange-500 bg-orange-50' : 'border-gray-300 hover:border-orange-300'
+                            }`}
                         >
                           <div className='flex items-center justify-center gap-2'>
                             <div className='w-4 h-4 border-2 border-orange-600 rounded-sm flex items-center justify-center'>
@@ -924,9 +962,8 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                         value={menuItemFormik.values.category}
                         onChange={menuItemFormik.handleChange}
                         onBlur={menuItemFormik.handleBlur}
-                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${
-                          menuItemFormik.touched.category && menuItemFormik.errors.category ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#ff4d4d] ${menuItemFormik.touched.category && menuItemFormik.errors.category ? 'border-red-500' : 'border-gray-300'
+                          }`}
                       >
                         <option value={0}>Select Category</option>
                         {categories.map((cat) => (
@@ -960,34 +997,52 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
                 </div>
 
                 {/* Item Photos Section */}
-                {/* <div className='border-b pb-4'>
-                  <h3 className='text-base font-semibold mb-4 text-gray-900'>Item Photos</h3>
-                  <div className='flex items-start gap-4'>
-                    <div className='flex-shrink-0'>
-                      {imagePreview ? (
-                        <div className='relative'>
-                          <img src={imagePreview} className='rounded-lg object-cover w-32 h-32 border-2 border-gray-200' alt='Preview' />
-                          <button
-                            type='button'
-                            onClick={() => {
-                              setImagePreview(null);
-                              setImageFile(null);
-                            }}
-                            className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600'
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <label className='w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-colors bg-gray-50'>
-                          <Upload size={24} className='text-gray-400 mb-1' />
-                          <span className='text-sm text-blue-600'>Upload</span>
-                          <input type='file' className='hidden' onChange={handleImageUpload} accept='image/*' />
-                        </label>
-                      )}
-                    </div>
+                <div className='border-b pb-4'>
+                  <div className='flex items-center justify-between mb-3'>
+                    <h3 className='text-base font-semibold text-gray-900'>Item Photos</h3>
+                    <span className='text-xs text-gray-400'>{imageFiles.length + existingImages.length} / 5 images</span>
                   </div>
-                </div> */}
+                  <div className='flex flex-wrap gap-3'>
+                    {/* Preview thumbnails */}
+                    {imagePreviews.map((src, idx) => (
+                      <div key={idx} className='relative w-24 h-24'>
+                        <img src={src} alt={`preview-${idx}`} className='w-24 h-24 object-cover rounded-lg border-2 border-gray-200' />
+                        <button
+                          type='button'
+                          onClick={() => removeImage(idx)}
+                          className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow'
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Existing images from server (edit mode) */}
+                    {existingImages.map((img, idx) => (
+                      <div key={`existing-${idx}`} className='relative w-24 h-24'>
+                        <img src={img.image} alt={`existing-${idx}`} className='w-24 h-24 object-cover rounded-lg border-2 border-blue-200' />
+                        <span className='absolute bottom-0 left-0 right-0 bg-blue-500/70 text-white text-[9px] text-center rounded-b-lg py-0.5'>Saved</span>
+                        <button
+                          type='button'
+                          onClick={() => handleDeleteExistingImage(img.id)}
+                          className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow'
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Upload button — only show if under limit */}
+                    {imageFiles.length < 5 && (
+                      <label className='w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[#ff4d4d] transition-colors bg-gray-50'>
+                        <Upload size={22} className='text-gray-400 mb-1' />
+                        <span className='text-xs text-[#ff4d4d] font-medium'>Add Photo</span>
+                        <input type='file' className='hidden' onChange={handleImageUpload} accept='image/*' multiple />
+                      </label>
+                    )}
+                  </div>
+                  <p className='text-xs text-gray-400 mt-2'>Max 5 images · Each up to 5 MB · JPG, PNG, WEBP</p>
+                </div>
               </>
             )}
 
@@ -1763,6 +1818,35 @@ const MenuItemManagement: React.FC<MenuItemManagementProps> = ({ restaurantId })
           </div>
         </form>
       </ModalComponent>
+
+      {/* ================= IMAGE DELETE CONFIRMATION MODAL ================= */}
+      {isImageDeleteModalOpen && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm'>
+          <div className='bg-white rounded-2xl shadow-2xl max-w-xs w-full animate-fade-in'>
+            <div className='p-5'>
+              <div className='flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-3'>
+                <Trash2 className='text-red-600' size={24} />
+              </div>
+              <h2 className='text-lg font-bold text-center mb-2 text-gray-900'>Delete Photo?</h2>
+              <p className='text-gray-500 text-center text-sm mb-5'>This action will permanently remove the photo.</p>
+              <div className='flex gap-2'>
+                <button
+                  onClick={() => {
+                    setIsImageDeleteModalOpen(false);
+                    setImageToDeleteId(null);
+                  }}
+                  className='flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium'
+                >
+                  Cancel
+                </button>
+                <button onClick={confirmDeleteImage} className='flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm font-medium'>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= DELETE CONFIRMATION MODAL ================= */}
       {isDeleteModalOpen && itemToDelete && (

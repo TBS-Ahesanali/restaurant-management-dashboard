@@ -25,6 +25,7 @@ export interface MenuItem {
   sub_category: number;
   is_available: boolean;
   image?: string;
+  images?: Array<{ id: number; image: string }>;
 }
 
 export interface VariationGroup {
@@ -198,20 +199,23 @@ export const getMenuItems = createApiThunk('menuManagement/getMenuItems', () => 
 
 export const getMenuItemById = createApiThunk('menuManagement/getMenuItemById', (id: number) => axiosInstance.get(`/menu/${id}`));
 
-// Fixed: Use /menu-item-creation/ for both create and update
-export const addMenuItem = createApiThunk('menuManagement/addMenuItem', (payload: any) =>
+// FormData-based create (supports multiple images)
+export const addMenuItem = createApiThunk('menuManagement/addMenuItem', (payload: FormData) =>
   axiosInstance.post('/menu-item-creation', payload, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'multipart/form-data' },
   }),
 );
 
-export const updateMenuItem = createApiThunk('menuManagement/updateMenuItem', (payload: { id: number; data: any }) =>
+// FormData-based update (supports multiple images)
+export const updateMenuItem = createApiThunk('menuManagement/updateMenuItem', (payload: { id: number; data: FormData }) =>
   axiosInstance.patch(`/menu-item-creation/${payload.id}`, payload.data, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'multipart/form-data' },
   }),
 );
 
 export const deleteMenuItem = createApiThunk('menuManagement/deleteMenuItem', (id: number) => axiosInstance.delete(`/menu/${id}`));
+
+export const deleteMenuItemImage = createApiThunk('menuManagement/deleteMenuItemImage', (id: number) => axiosInstance.delete(`/menu-item-image/${id}/`));
 
 /* ===================== VARIATION GROUP THUNKS ===================== */
 
