@@ -22,7 +22,8 @@ const CustomersList = lazy(() => import('../pages/customers/Customerslist'));
 const MenuManagement = lazy(() => import('../pages/menuManagement'));
 const BookingsPage = lazy(() => import('../components/bookings/BookingsPage'));
 const DiscountsPage = lazy(() => import('../components/discounts/DiscountsPage'));
-const OrdersPage = lazy(() => import('../components/orders/OrdersPage'));
+const OrdersPage = lazy(() => import('../pages/orders/OrdersPage'));
+const ViewOrderDetails = lazy(() => import('../pages/orders/ViewOrderDetails'));
 const ChangePasswordPage = lazy(() => import('../components/profile/ChangePasswordPage'));
 const ProfilePage = lazy(() => import('../components/profile/ProfilePage'));
 const NotFound = lazy(() => import('../components/NotFound'));
@@ -121,6 +122,14 @@ const routes: RouteObject[] = [
         element: (
           <PermissionGuard requiredPermission={PermissionModules.ORDERS}>
             <OrdersPage />
+          </PermissionGuard>
+        ),
+      },
+      {
+        path: PATHS.VIEW_ORDER_DETAILS,
+        element: (
+          <PermissionGuard requiredPermission={PermissionModules.ORDERS}>
+            <ViewOrderDetails />
           </PermissionGuard>
         ),
       },

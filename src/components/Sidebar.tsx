@@ -89,12 +89,12 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       label: 'Notifications',
       permission: PermissionModules.NOTIFICATIONS,
     },
-    {
-      path: '/settings',
-      icon: Settings,
-      label: 'Settings',
-      permission: PermissionModules.SETTINGS,
-    },
+    // {
+    //   path: '/settings',
+    //   icon: Settings,
+    //   label: 'Settings',
+    //   permission: PermissionModules.SETTINGS,
+    // },
   ];
 
   // Filter nav items based on user permissions

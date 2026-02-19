@@ -7,6 +7,7 @@ export const PATHS = {
   BOOKINGS: '/bookings',
   DISCOUNTS: '/discounts',
   ORDERS: '/orders',
+  VIEW_ORDER_DETAILS: '/orders/:id',
   CUSTOMERS: '/customers',
   VIEW_CUSTOMER_DETAILS: '/customers/:id',
   REPORTS: '/reports',

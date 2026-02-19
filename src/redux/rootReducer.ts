@@ -6,6 +6,7 @@ import menuManagementReducer from './slices/menuManagementSlice';
 import offerManagementReducer from './slices/offerManagementSlice';
 import customerManagementReducer from './slices/customermanagementslice';
 import dashboardManagementReducer from './slices/dashboardManagementSlice';
+import orderManagementReducer from './slices/orderManagementSlice';
 
 const rootReducer = combineReducers({
   userProfile: userProfileReducer,
@@ -14,6 +15,7 @@ const rootReducer = combineReducers({
   offerManagement: offerManagementReducer,
   customerManagement: customerManagementReducer,
   dashboardManagement: dashboardManagementReducer,
+  orderManagement: orderManagementReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
